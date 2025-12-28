@@ -194,23 +194,66 @@ export const useStorageStore = create<StorageState>()(
       syncFromServer: async () => {
         set({ isSyncing: true });
         try {
+          // 獲取當前用戶的 session
+          const sessionResponse = await fetch('/api/auth/session');
+          const session = await sessionResponse.json();
+          
+          if (!session?.user?.email) {
+            console.warn('無法獲取用戶 session，跳過同步');
+            set({ isSyncing: false });
+            return;
+          }
+          
+          const userEmail = session.user.email;
+          console.log('同步行程，用戶:', userEmail);
+          
           const response = await fetch('/api/trips');
           if (response.ok) {
             const data = await response.json();
             const serverTrips = data.trips || [];
+            
+            // 前端額外驗證：確保所有行程都屬於當前用戶
+            const filteredTrips = serverTrips.filter((trip: any) => {
+              // 如果行程有 user_email 字段，驗證它
+              if (trip.user_email && trip.user_email !== userEmail) {
+                console.error('安全警告：前端發現不屬於當前用戶的行程！', {
+                  tripId: trip.id,
+                  tripUserEmail: trip.user_email,
+                  currentUserEmail: userEmail,
+                });
+                return false;
+              }
+              return true;
+            });
+            
             const state = get();
             
-            // 合併服務器行程和本地行程，避免丟失本地未同步的行程
-            const mergedTrips = [...serverTrips];
+            // 合併服務器行程和本地行程，但只保留屬於當前用戶的本地行程
+            const mergedTrips = [...filteredTrips];
             state.savedTrips.forEach(localTrip => {
-              const exists = mergedTrips.find(t => t.id === localTrip.id);
-              if (!exists) {
-                // 如果本地有但服務器沒有，保留本地版本
-                mergedTrips.push(localTrip);
+              // 只保留屬於當前用戶的本地行程
+              if (!localTrip.user_email || localTrip.user_email === userEmail) {
+                const exists = mergedTrips.find(t => t.id === localTrip.id);
+                if (!exists) {
+                  // 如果本地有但服務器沒有，且屬於當前用戶，保留本地版本
+                  mergedTrips.push(localTrip);
+                }
+              } else {
+                // 如果本地行程屬於其他用戶，移除它
+                console.warn('移除不屬於當前用戶的本地行程:', localTrip.id);
               }
             });
             
-            set({ savedTrips: mergedTrips });
+            // 再次過濾，確保沒有其他用戶的數據
+            const finalTrips = mergedTrips.filter((trip: any) => {
+              if (trip.user_email && trip.user_email !== userEmail) {
+                return false;
+              }
+              return true;
+            });
+            
+            console.log('同步完成，用戶:', userEmail, '行程數:', finalTrips.length);
+            set({ savedTrips: finalTrips });
           }
         } catch (error) {
           console.error('Error syncing from server:', error);

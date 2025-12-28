@@ -99,6 +99,7 @@ export async function GET(request: NextRequest) {
       });
 
       // 轉換資料格式（Supabase 使用 created_at/updated_at，我們需要 createdAt/updatedAt）
+      // 包含 user_email 以便前端驗證
       const trips = filteredData.map((trip: any) => ({
         id: trip.id,
         name: trip.name,
@@ -106,6 +107,7 @@ export async function GET(request: NextRequest) {
         itinerary: trip.itinerary,
         createdAt: trip.created_at,
         updatedAt: trip.updated_at,
+        user_email: trip.user_email, // 包含 user_email 以便前端驗證
       }));
 
       console.log('返回', trips.length, '個行程給用戶:', userEmail);

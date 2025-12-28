@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { useStorageStore } from '@/store/useStorageStore';
 import { useTravelStore } from '@/store/useTravelStore';
 import { calculateTripDistance } from '@/utils/calculateDistance';
@@ -22,12 +23,16 @@ interface TripSummary {
 
 export default function TripList() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { savedTrips, currentTrip, syncFromServer, loadTrip } = useStorageStore();
   const { tripSettings, itinerary, getTotalSpent, setTripSettings, setItinerary } = useTravelStore();
   const [tripSummaries, setTripSummaries] = useState<TripSummary[]>([]);
   const [totalAllSpent, setTotalAllSpent] = useState(0);
   const [totalAllDistance, setTotalAllDistance] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // 獲取當前用戶 email
+  const userEmail = session?.user?.email;
 
   const handleTripClick = (tripId: string) => {
     if (tripId === 'current') {
@@ -108,9 +113,19 @@ export default function TripList() {
         });
       }
 
-      // 處理歷史行程
-      for (const trip of savedTrips) {
+      // 處理歷史行程（只處理屬於當前用戶的行程）
+      const userTrips = userEmail 
+        ? savedTrips.filter(trip => !trip.user_email || trip.user_email === userEmail)
+        : savedTrips; // 如果沒有 session，保留所有（但這不應該發生）
+      
+      for (const trip of userTrips) {
         if (trip.id === currentTrip?.id) continue; // 跳過已在當前行程中的
+        
+        // 額外驗證：確保行程屬於當前用戶
+        if (userEmail && trip.user_email && trip.user_email !== userEmail) {
+          console.warn('跳過不屬於當前用戶的行程:', trip.id, trip.user_email, '當前用戶:', userEmail);
+          continue;
+        }
 
         let distance = 0;
         if (trip.itinerary.length > 0) {
