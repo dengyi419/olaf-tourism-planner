@@ -2,7 +2,33 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { DayItinerary, TripSettings } from '@/types';
-import { initializeSupabase } from '@/lib/supabase';
+
+// 動態初始化 Supabase（避免構建時解析）
+async function initializeSupabase(): Promise<any> {
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL || '';
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return null;
+    }
+
+    // 使用 Function 構造函數動態執行 require，完全避免 webpack 解析
+    const requireModule = new Function('moduleName', 'return require(moduleName)');
+    const supabaseModule = requireModule('@supabase/supabase-js');
+    const { createClient } = supabaseModule;
+
+    return createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+  } catch (error: any) {
+    console.error('Supabase 初始化失敗:', error?.message || error);
+    return null;
+  }
+}
 
 // 後備內存數據庫（如果 Supabase 未配置）
 const tripsDatabase = new Map<string, Array<{
