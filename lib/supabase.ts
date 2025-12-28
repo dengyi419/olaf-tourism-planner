@@ -1,7 +1,9 @@
-// 直接導入 Supabase（Next.js 會正確打包）
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+// 動態載入 Supabase，避免構建時解析
+// 使用類型定義來避免 TypeScript 錯誤
+type SupabaseClient = any;
 
 let supabaseClient: SupabaseClient | null = null;
+let supabaseModule: any = null;
 
 export async function initializeSupabase(): Promise<SupabaseClient | null> {
   // 如果已經初始化，直接返回
@@ -10,6 +12,14 @@ export async function initializeSupabase(): Promise<SupabaseClient | null> {
   }
 
   try {
+    // 動態載入 Supabase 模組（避免構建時解析）
+    if (!supabaseModule) {
+      // 使用動態 import，構建時不會解析
+      supabaseModule = await import('@supabase/supabase-js');
+    }
+
+    const { createClient } = supabaseModule;
+    
     const supabaseUrl = process.env.SUPABASE_URL || '';
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
@@ -33,6 +43,9 @@ export async function initializeSupabase(): Promise<SupabaseClient | null> {
   } catch (error: any) {
     console.error('Supabase 客戶端初始化失敗，將使用內存存儲:', error);
     console.error('錯誤詳情:', error?.message || error);
+    if (error?.code) {
+      console.error('錯誤代碼:', error.code);
+    }
     if (error?.stack) {
       console.error('錯誤堆棧:', error.stack);
     }
