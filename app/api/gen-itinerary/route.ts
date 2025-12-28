@@ -231,34 +231,61 @@ ${GEMINI_SYSTEM_PROMPT}
   } catch (error: any) {
     console.error('生成行程錯誤:', error);
     
-    // 處理 API 金鑰相關錯誤
-    if (error.message?.includes('API key not valid') || error.message?.includes('API_KEY_INVALID')) {
-      return NextResponse.json(
-        { 
-          error: 'API 金鑰無效',
-          details: '請檢查 .env.local 檔案中的 GEMINI_API_KEY 是否正確。您可以在 https://makersuite.google.com/app/apikey 取得新的 API 金鑰。',
-          errorCode: 'INVALID_API_KEY'
-        },
-        { status: 401 }
-      );
-    }
+    let errorMessage = '生成行程失敗';
+    let statusCode = 500;
+    let isQuotaError = false;
+    let errorCode = 'UNKNOWN_ERROR';
+    let details = error.message || '';
     
+    // 檢查錯誤類型
+    const errorStr = error.message || error.toString() || '';
+    const statusCodeMatch = errorStr.match(/\[(\d+)\]/);
+    const httpStatus = statusCodeMatch ? parseInt(statusCodeMatch[1]) : null;
+    
+    // 檢查是否是配額相關錯誤
+    const quotaKeywords = ['quota', 'exceeded', 'limit', 'RPD', 'requests per day', 'resource exhausted'];
+    const hasQuotaKeyword = quotaKeywords.some(keyword => 
+      errorStr.toLowerCase().includes(keyword.toLowerCase())
+    );
+    
+    // 處理 API 金鑰相關錯誤
+    if (error.message?.includes('API key not valid') || error.message?.includes('API_KEY_INVALID') || error.message?.includes('401')) {
+      errorMessage = 'API 金鑰無效';
+      details = '請檢查您的 Gemini API Key 是否正確。您可以在 https://makersuite.google.com/app/apikey 取得新的 API 金鑰。';
+      errorCode = 'INVALID_API_KEY';
+      statusCode = 401;
+    }
+    // 處理速率限制錯誤（429）
+    else if (httpStatus === 429 || error.message?.includes('429') || error.message?.includes('rate limit')) {
+      errorMessage = 'API 請求次數過多（速率限制）';
+      details = '建議：\n- 等待 10-30 秒後再試\n- 避免快速連續請求';
+      errorCode = 'RATE_LIMIT';
+      statusCode = 429;
+    }
+    // 處理配額限制錯誤（403）
+    else if (httpStatus === 403 || hasQuotaKeyword || error.message?.includes('403') || error.message?.includes('quota') || error.message?.includes('exceeded') || error.message?.includes('RPD')) {
+      isQuotaError = true;
+      errorMessage = 'API 配額已用完（Peak requests per day 超過限制）';
+      details = '解決方案：\n1. 等待 24 小時後配額重置\n2. 升級您的 Gemini API 配額\n3. 檢查配額使用情況：https://makersuite.google.com/app/apikey\n\n注意：免費配額通常每天有請求次數限制';
+      errorCode = 'QUOTA_EXCEEDED';
+      statusCode = 403;
+    }
     // 處理模型不存在錯誤
-    if (error.message?.includes('is not found') || error.message?.includes('404')) {
-      return NextResponse.json(
-        { 
-          error: 'AI 模型不可用',
-          details: 'Gemini 模型名稱可能已更新。請檢查 Google AI Studio 以確認可用的模型名稱。',
-          errorCode: 'MODEL_NOT_FOUND',
-          suggestion: '可以嘗試更新為 gemini-1.5-pro 或其他可用的模型'
-        },
-        { status: 404 }
-      );
+    else if (error.message?.includes('is not found') || error.message?.includes('404')) {
+      errorMessage = 'AI 模型不可用';
+      details = 'Gemini 模型名稱可能已更新。請檢查 Google AI Studio 以確認可用的模型名稱。';
+      errorCode = 'MODEL_NOT_FOUND';
+      statusCode = 404;
     }
     
     return NextResponse.json(
-      { error: '生成行程失敗', details: error.message },
-      { status: 500 }
+      { 
+        error: errorMessage,
+        details,
+        errorCode,
+        isQuotaError
+      },
+      { status: statusCode }
     );
   }
 }

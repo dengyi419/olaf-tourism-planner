@@ -100,13 +100,28 @@ export default function AIPlanPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
+        const errorMessage = errorData.error || '生成行程失敗';
+        const details = errorData.details || '';
+        const isQuotaError = errorData.isQuotaError || false;
+        
+        // 如果是配額錯誤，顯示詳細的解決方案
+        if (isQuotaError || response.status === 403 || errorMessage.includes('配額已用完') || errorMessage.includes('RPD')) {
+          throw new Error(`${errorMessage}\n\n${details}`);
+        }
+        
+        // 如果是速率限制，提供重試建議
+        if (response.status === 429 || errorMessage.includes('速率限制')) {
+          throw new Error(`${errorMessage}\n\n${details}`);
+        }
+        
+        // 其他錯誤
         if (errorData.errorCode === 'INVALID_API_KEY' && errorData.details) {
-          throw new Error(`${errorData.error}\n\n${errorData.details}`);
+          throw new Error(`${errorMessage}\n\n${errorData.details}`);
         }
         if (errorData.errorCode === 'API_KEY_NOT_SET' && errorData.details) {
-          throw new Error(`${errorData.error}\n\n${errorData.details}\n\n請前往「API 金鑰設定」頁面設定您的 API 金鑰。`);
+          throw new Error(`${errorMessage}\n\n${errorData.details}\n\n請前往「API 金鑰設定」頁面設定您的 API 金鑰。`);
         }
-        throw new Error(errorData.error || errorData.details || '生成行程失敗');
+        throw new Error(errorMessage + (details ? `\n\n${details}` : ''));
       }
 
       const data = await response.json();
