@@ -98,10 +98,15 @@ export const useStorageStore = create<StorageState>()(
 
         // 同步到後端
         try {
+          // 如果 forceNewId 為 true，或者 currentTrip 沒有 createdAt，表示是新行程，強制創建
+          const forceCreate = forceNewId || !state.currentTrip?.createdAt;
           const response = await fetch('/api/trips', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newTrip),
+            body: JSON.stringify({
+              ...newTrip,
+              forceCreate, // 告訴後端強制創建新記錄
+            }),
           });
           if (!response.ok) {
             console.error('Failed to sync trip to server');

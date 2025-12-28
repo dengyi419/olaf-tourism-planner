@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, name, settings, itinerary } = body;
+    const { id, name, settings, itinerary, createdAt, forceCreate } = body;
 
     if (!settings || !itinerary) {
       return NextResponse.json(
@@ -157,8 +157,14 @@ export async function POST(request: NextRequest) {
       const userPrefix = userEmail.split('@')[0].substring(0, 4);
       return `trip-${timestamp}-${randomStr}-${userPrefix}`;
     };
-    let tripId = id || generateUniqueId(session.user.email);
     const tripName = name || `行程 ${new Date().toLocaleDateString('zh-TW')}`;
+    
+    // 決定是否要強制創建新行程
+    // 如果 forceCreate 為 true，或者沒有 createdAt（表示是新行程），強制創建新記錄
+    const shouldForceCreate = forceCreate || !createdAt;
+    
+    // 如果強制創建，生成新 ID，忽略前端傳來的 ID
+    let tripId = shouldForceCreate ? generateUniqueId(session.user.email) : (id || generateUniqueId(session.user.email));
 
     // 初始化 Supabase（如果尚未初始化）
     const supabase = await initializeSupabase();
@@ -218,38 +224,27 @@ export async function POST(request: NextRequest) {
         name: tripName,
         hasSettings: !!settings,
         hasItinerary: !!itinerary,
+        shouldForceCreate,
+        existing: !!existing,
       });
 
-      if (existing) {
-        console.log('更新現有行程:', tripId);
-        // 更新現有行程（確保只更新當前用戶的行程）
-        const { data, error } = await supabase
-          .from('trips')
-          .update(tripData)
-          .eq('id', tripId)
-          .eq('user_email', session.user.email) // 雙重驗證：確保只更新當前用戶的行程
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Supabase 更新錯誤:', error);
-          throw error;
+      // 如果強制創建新行程，或者行程不存在，創建新記錄
+      if (shouldForceCreate || !existing) {
+        // 如果強制創建但 ID 已存在，生成新 ID
+        if (shouldForceCreate && existing) {
+          console.log('強制創建新行程，但 ID 已存在，生成新 ID');
+          tripId = generateUniqueId(session.user.email);
+          // 重新檢查新 ID
+          const { data: checkNewId } = await supabase
+            .from('trips')
+            .select('id')
+            .eq('id', tripId)
+            .maybeSingle();
+          if (checkNewId) {
+            tripId = generateUniqueId(session.user.email);
+          }
         }
-
-        console.log('行程更新成功:', data.id);
-
-        // 轉換格式
-        const trip = {
-          id: data.id,
-          name: data.name,
-          settings: data.settings,
-          itinerary: data.itinerary,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-        };
-
-        return NextResponse.json({ trip, success: true });
-      } else {
+        
         console.log('創建新行程:', tripId);
         // 創建新行程
         const newTripData = {
@@ -286,6 +281,35 @@ export async function POST(request: NextRequest) {
           await supabase.from('trips').delete().eq('id', data.id);
           throw new Error('Data integrity error: Created trip does not belong to current user');
         }
+
+        // 轉換格式
+        const trip = {
+          id: data.id,
+          name: data.name,
+          settings: data.settings,
+          itinerary: data.itinerary,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+        };
+
+        return NextResponse.json({ trip, success: true });
+      } else {
+        // 更新現有行程（只有在不強制創建且行程存在時才更新）
+        console.log('更新現有行程:', tripId);
+        const { data, error } = await supabase
+          .from('trips')
+          .update(tripData)
+          .eq('id', tripId)
+          .eq('user_email', session.user.email) // 雙重驗證：確保只更新當前用戶的行程
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Supabase 更新錯誤:', error);
+          throw error;
+        }
+
+        console.log('行程更新成功:', data.id);
 
         // 轉換格式
         const trip = {
