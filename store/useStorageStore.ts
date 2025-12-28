@@ -40,15 +40,11 @@ export const useStorageStore = create<StorageState>()(
         const tripSettings = settings || state.currentTrip?.settings || { totalBudget: 0, destination: '', currency: 'TWD' };
         const tripItinerary = itinerary || state.currentTrip?.itinerary || [];
         
-        // 生成唯一 ID：使用時間戳 + 隨機字符串 + 用戶標識（如果可用）
+        // 生成唯一 ID：使用時間戳 + 隨機字符串，確保唯一性
         const generateUniqueId = () => {
           const timestamp = Date.now();
           const randomStr = Math.random().toString(36).substring(2, 9);
-          // 嘗試從 session 獲取用戶 email 的前綴（如果可用）
-          const userPrefix = typeof window !== 'undefined' && (window as any).__NEXT_DATA__?.props?.pageProps?.session?.user?.email
-            ? (window as any).__NEXT_DATA__.props.pageProps.session.user.email.split('@')[0].substring(0, 4)
-            : '';
-          return `trip-${timestamp}-${randomStr}${userPrefix ? `-${userPrefix}` : ''}`;
+          return `trip-${timestamp}-${randomStr}`;
         };
         
         const newTrip: SavedTrip = {
