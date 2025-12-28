@@ -7,13 +7,6 @@ interface RouteMapProps {
   activities: Activity[];
   dayId: number;
 }
-
-declare global {
-  interface Window {
-    google: typeof google;
-  }
-}
-
 export default function RouteMap({ activities, dayId }: RouteMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
