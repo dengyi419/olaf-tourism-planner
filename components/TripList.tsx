@@ -91,8 +91,13 @@ export default function TripList() {
         let distance = 0;
         if (trip.itinerary.length > 0) {
           const allActivities = trip.itinerary.flatMap(day => day.activities);
-          if (allActivities.length >= 2 && window.google?.maps) {
-            distance = await calculateTripDistance(allActivities);
+          if (allActivities.length >= 2) {
+            try {
+              distance = await calculateTripDistance(allActivities);
+            } catch (error) {
+              console.error('計算距離失敗:', error);
+              distance = 0;
+            }
           }
         }
 
