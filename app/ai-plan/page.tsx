@@ -16,6 +16,7 @@ export default function AIPlanPage() {
   const [days, setDays] = useState(3);
   const [budget, setBudget] = useState(50000);
   const [currency, setCurrency] = useState('TWD');
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [preferences, setPreferences] = useState('');
   const [excludedPlaces, setExcludedPlaces] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
