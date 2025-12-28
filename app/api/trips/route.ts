@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       console.log('Supabase 查詢成功，找到', data?.length || 0, '個行程');
 
       // 轉換資料格式（Supabase 使用 created_at/updated_at，我們需要 createdAt/updatedAt）
-      const trips = (data || []).map(trip => ({
+      const trips = (data || []).map((trip: any) => ({
         id: trip.id,
         name: trip.name,
         settings: trip.settings,
