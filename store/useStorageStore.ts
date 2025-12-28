@@ -27,20 +27,10 @@ interface StorageState {
 }
 
 // 獲取用戶特定的 localStorage key
+// 注意：這個函數在模組載入時執行，此時可能還沒有用戶 email
+// 我們使用默認 key，然後在用戶登入時通過 onRehydrateStorage 過濾數據
 const getStorageKey = (): string => {
-  if (typeof window === 'undefined') return 'travelgenie-storage';
-  
-  // 嘗試從 session 獲取用戶 email
-  try {
-    // 使用同步方式檢查 localStorage 中是否有存儲的用戶 email
-    const storedUserEmail = localStorage.getItem('current_user_email');
-    if (storedUserEmail) {
-      return `travelgenie-storage-${storedUserEmail}`;
-    }
-  } catch (error) {
-    console.warn('無法獲取用戶 email，使用默認 key:', error);
-  }
-  
+  // 使用默認 key，數據隔離通過過濾實現
   return 'travelgenie-storage';
 };
 
