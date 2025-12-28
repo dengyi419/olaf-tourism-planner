@@ -2,19 +2,26 @@
 
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Clock from './Clock';
 import TripList from './TripList';
 import LanguageSelector from './LanguageSelector';
 import UserMenu from './UserMenu';
-import { Settings } from 'lucide-react';
+import { Settings, Menu, X, Camera, FileText } from 'lucide-react';
 import { useLanguageStore, t } from '@/store/useLanguageStore';
 import { useStorageStore } from '@/store/useStorageStore';
+import { useTravelStore } from '@/store/useTravelStore';
+import CurrentTripModal from './CurrentTripModal';
+import CameraTranslateModal from './CameraTranslateModal';
 
 export default function MainMenu() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { syncFromServer } = useStorageStore();
+  const { syncFromServer, currentTrip } = useStorageStore();
+  const { tripSettings, itinerary } = useTravelStore();
+  const [showTripList, setShowTripList] = useState(false);
+  const [showCurrentTripModal, setShowCurrentTripModal] = useState(false);
+  const [showCameraModal, setShowCameraModal] = useState(false);
 
   useEffect(() => {
     // 如果已登入，從服務器同步行程
@@ -22,6 +29,8 @@ export default function MainMenu() {
       syncFromServer();
     }
   }, [status, syncFromServer]);
+
+  const hasCurrentTrip = (currentTrip || (tripSettings && itinerary.length > 0));
 
   // 如果未登入，重定向到登入頁面
   if (status === 'unauthenticated') {
@@ -41,16 +50,76 @@ export default function MainMenu() {
 
   return (
     <div className="min-h-screen bg-[#f5f5dc]">
-      {/* 右上角時鐘、語言選擇器和用戶菜單 */}
-      <div className="absolute top-4 right-4 z-10 flex gap-2">
+      {/* 手機版頂部狀態列 */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b-4 border-black">
+        <div className="flex items-center justify-between p-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowTripList(!showTripList)}
+              className="pixel-button px-3 py-2 text-xs"
+            >
+              <Menu className="w-4 h-4 inline mr-1" />
+              <span>行程</span>
+            </button>
+            {hasCurrentTrip && (
+              <button
+                onClick={() => setShowCurrentTripModal(true)}
+                className="pixel-button px-3 py-2 text-xs"
+              >
+                <FileText className="w-4 h-4 inline mr-1" />
+                <span>當前行程</span>
+              </button>
+            )}
+            <button
+              onClick={() => setShowCameraModal(true)}
+              className="pixel-button px-3 py-2 text-xs"
+            >
+              <Camera className="w-4 h-4 inline mr-1" />
+              <span>翻譯</span>
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <LanguageSelector />
+            <UserMenu />
+            <Clock />
+          </div>
+        </div>
+      </div>
+
+      {/* 手機版行程列表抽屜 */}
+      {showTripList && (
+        <>
+          <div 
+            className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={() => setShowTripList(false)}
+          />
+          <div className="lg:hidden fixed top-14 left-0 bottom-0 w-80 bg-[#f5f5dc] z-40 overflow-y-auto border-r-4 border-black">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold">行程列表</h2>
+                <button
+                  onClick={() => setShowTripList(false)}
+                  className="pixel-button px-3 py-2 text-xs"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <TripList />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 桌面版右上角時鐘、語言選擇器和用戶菜單 */}
+      <div className="hidden lg:flex absolute top-4 right-4 z-10 gap-2">
         <LanguageSelector />
         <UserMenu />
         <Clock />
       </div>
 
-      <div className="flex gap-4 p-4 pt-20">
-        {/* 左側：行程列表 */}
-        <div className="w-80 flex-shrink-0">
+      <div className="flex flex-col lg:flex-row gap-4 p-4 pt-14 lg:pt-20">
+        {/* 左側：行程列表（桌面版顯示，手機版隱藏） */}
+        <div className="hidden lg:block w-80 flex-shrink-0">
           <TripList />
         </div>
 
@@ -111,6 +180,18 @@ export default function MainMenu() {
           </div>
         </div>
       </div>
+
+      {/* 當前行程模態框 */}
+      <CurrentTripModal 
+        isOpen={showCurrentTripModal} 
+        onClose={() => setShowCurrentTripModal(false)} 
+      />
+
+      {/* 拍照翻譯模態框 */}
+      <CameraTranslateModal 
+        isOpen={showCameraModal} 
+        onClose={() => setShowCameraModal(false)} 
+      />
     </div>
   );
 }
