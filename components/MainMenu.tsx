@@ -30,7 +30,33 @@ export default function MainMenu() {
     }
   }, [status, syncFromServer]);
 
-  const hasCurrentTrip = (currentTrip || (tripSettings && itinerary.length > 0));
+  // 檢查是否有當前行程，並且根據日期判斷是否為當前進行中的行程
+  const checkIsCurrentTrip = () => {
+    const trip = currentTrip || (tripSettings && itinerary.length > 0 ? {
+      id: 'current',
+      name: '當前行程',
+      settings: tripSettings,
+      itinerary,
+    } : null);
+    
+    if (!trip) return false;
+    
+    // 如果行程有開始日期，檢查當前日期是否在行程日期範圍內
+    if (trip.settings?.startDate && trip.itinerary?.length > 0) {
+      const today = new Date().toISOString().split('T')[0];
+      const startDate = trip.settings.startDate;
+      const lastDay = trip.itinerary[trip.itinerary.length - 1];
+      const endDate = lastDay?.date || startDate;
+      
+      // 檢查今天是否在行程日期範圍內
+      return today >= startDate && today <= endDate;
+    }
+    
+    // 如果沒有開始日期，只要有行程就顯示
+    return trip.itinerary?.length > 0;
+  };
+  
+  const hasCurrentTrip = checkIsCurrentTrip();
 
   // 如果未登入，重定向到登入頁面
   if (status === 'unauthenticated') {
