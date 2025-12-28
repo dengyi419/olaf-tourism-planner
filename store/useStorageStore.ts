@@ -24,6 +24,7 @@ interface StorageState {
   updateCurrentTrip: (settings: TripSettings, itinerary: DayItinerary[]) => Promise<void>;
   clearCurrentTrip: () => void;
   syncFromServer: () => Promise<void>;
+  clearAllData: () => void;
 }
 
 // 獲取用戶特定的 localStorage key
@@ -311,6 +312,26 @@ export const useStorageStore = create<StorageState>()(
 
       clearCurrentTrip: () => {
         set({ currentTrip: null });
+      },
+      
+      // 清除所有數據（用於登出時）
+      clearAllData: () => {
+        if (typeof window !== 'undefined') {
+          // 清除 localStorage 中的用戶 email
+          try {
+            localStorage.removeItem('current_user_email');
+            // 清除整個存儲
+            localStorage.removeItem('travelgenie-storage');
+          } catch (error) {
+            console.warn('清除 localStorage 失敗:', error);
+          }
+        }
+        // 清除狀態
+        set({ 
+          currentTrip: null, 
+          savedTrips: [],
+          isSyncing: false 
+        });
       },
     }),
     {

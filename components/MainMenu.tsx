@@ -26,24 +26,36 @@ export default function MainMenu() {
   useEffect(() => {
     // 如果已登入，從服務器同步行程
     if (status === 'authenticated' && session?.user?.email) {
+      const currentUserEmail = session.user.email;
+      
+      // 檢查是否有舊的用戶 email
+      const oldUserEmail = typeof window !== 'undefined' 
+        ? localStorage.getItem('current_user_email')
+        : null;
+      
+      // 如果用戶切換了（email 不同），清除所有舊數據
+      if (oldUserEmail && oldUserEmail !== currentUserEmail) {
+        console.log('檢測到用戶切換，清除舊數據:', oldUserEmail, '->', currentUserEmail);
+        const { clearAllData } = useStorageStore.getState();
+        clearAllData();
+      }
+      
       // 更新 localStorage 中的用戶 email
       if (typeof window !== 'undefined') {
         try {
-          localStorage.setItem('current_user_email', session.user.email);
+          localStorage.setItem('current_user_email', currentUserEmail);
         } catch (error) {
           console.warn('無法保存用戶 email:', error);
         }
       }
+      
+      // 從服務器同步行程
       syncFromServer();
     } else if (status === 'unauthenticated') {
-      // 如果未登入，清除用戶 email
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.removeItem('current_user_email');
-        } catch (error) {
-          console.warn('無法清除用戶 email:', error);
-        }
-      }
+      // 如果未登入，清除所有數據
+      console.log('用戶未登入，清除所有數據');
+      const { clearAllData } = useStorageStore.getState();
+      clearAllData();
     }
   }, [status, session, syncFromServer]);
 
