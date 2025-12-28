@@ -154,9 +154,11 @@ export default function PlanPage() {
     setTripSettings(null);
     setShowTripSelection(false);
     // 重置表單狀態
+    setTripName('');
     setDestination('');
     setBudget(50000);
     setCurrency('TWD');
+    setStartDate(new Date().toISOString().split('T')[0]);
     // 確保可以重新創建行程
     setShowTripSelection(false);
   };
