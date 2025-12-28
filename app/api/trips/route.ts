@@ -161,12 +161,11 @@ export async function POST(request: NextRequest) {
       const userEmail = session.user.email;
       console.log('使用 Supabase 保存行程，用戶:', userEmail, '行程ID:', tripId);
       
-      // 檢查是否已存在（只檢查當前用戶的行程）
+      // 檢查是否已存在（檢查全局，因為 id 是主鍵）
       const { data: existing, error: checkError } = await supabase
         .from('trips')
         .select('id, created_at, user_email')
         .eq('id', tripId)
-        .eq('user_email', userEmail) // 確保只檢查當前用戶的行程
         .maybeSingle();
 
       if (checkError && checkError.code !== 'PGRST116') { // PGRST116 是 "not found" 錯誤，可以忽略
@@ -175,17 +174,26 @@ export async function POST(request: NextRequest) {
         throw checkError;
       }
 
-      // 如果找到行程但屬於其他用戶，拒絕操作
+      // 如果找到行程但屬於其他用戶，生成新的 ID
       if (existing && existing.user_email !== userEmail) {
-        console.error('安全錯誤：嘗試訪問其他用戶的行程！', {
-          tripId,
-          tripUserEmail: existing.user_email,
+        console.warn('ID 衝突：該 ID 已被其他用戶使用，生成新 ID', {
+          oldTripId: tripId,
+          existingUserEmail: existing.user_email,
           currentUserEmail: userEmail,
         });
-        return NextResponse.json(
-          { error: 'Forbidden: Cannot access other user\'s trip' },
-          { status: 403 }
-        );
+        // 生成新的 ID
+        tripId = `trip-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        console.log('新生成的行程ID:', tripId);
+        // 重新檢查新 ID 是否可用（遞歸檢查，但通常不會衝突）
+        const { data: checkNewId } = await supabase
+          .from('trips')
+          .select('id')
+          .eq('id', tripId)
+          .maybeSingle();
+        if (checkNewId) {
+          // 如果新 ID 也衝突（極不可能），再生成一次
+          tripId = `trip-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        }
       }
 
       const tripData: any = {
