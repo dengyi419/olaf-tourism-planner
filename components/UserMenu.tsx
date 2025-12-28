@@ -3,10 +3,19 @@
 import { useSession, signOut } from 'next-auth/react';
 import { User, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useStorageStore } from '@/store/useStorageStore';
 
 export default function UserMenu() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { clearAllData } = useStorageStore();
+  
+  const handleSignOut = async () => {
+    // 清除所有本地數據
+    clearAllData();
+    // 執行登出
+    await signOut({ callbackUrl: '/auth/signin' });
+  };
 
   if (!session) {
     return (
@@ -31,7 +40,7 @@ export default function UserMenu() {
       )}
       <span className="text-xs hidden sm:inline">{session.user?.name || session.user?.email}</span>
       <button
-        onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+        onClick={handleSignOut}
         className="pixel-button px-3 py-2 text-xs"
         title="登出"
       >
