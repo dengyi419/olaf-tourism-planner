@@ -156,7 +156,7 @@ export default function CameraTranslateModal({ isOpen, onClose }: CameraTranslat
                 選擇圖片
               </button>
               <input
-                ref={fileInputRef.current}
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 onChange={handleFileSelect}
