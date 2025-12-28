@@ -17,7 +17,7 @@ interface StorageState {
   isSyncing: boolean;
   
   // Actions
-  saveCurrentTrip: (name?: string, settings?: TripSettings, itinerary?: DayItinerary[]) => Promise<void>;
+  saveCurrentTrip: (name?: string, settings?: TripSettings, itinerary?: DayItinerary[], forceNewId?: boolean) => Promise<void>;
   loadTrip: (id: string) => void;
   deleteTrip: (id: string) => Promise<void>;
   updateCurrentTrip: (settings: TripSettings, itinerary: DayItinerary[]) => Promise<void>;
