@@ -17,6 +17,10 @@ export default function AIPlanPage() {
   const [budget, setBudget] = useState(50000);
   const [currency, setCurrency] = useState('TWD');
   const [preferences, setPreferences] = useState('');
+  const [excludedPlaces, setExcludedPlaces] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState('');
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -45,6 +49,37 @@ export default function AIPlanPage() {
     setError('');
 
     try {
+      // 處理圖片上傳
+      let imageBase64 = '';
+      if (imageFile) {
+        imageBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(imageFile);
+        });
+      } else if (imageUrl) {
+        // 如果是 URL，嘗試獲取圖片
+        try {
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          imageBase64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const result = reader.result as string;
+              resolve(result);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch (err) {
+          console.warn('無法載入圖片 URL:', err);
+        }
+      }
+
       const response = await fetch('/api/gen-itinerary', {
         method: 'POST',
         headers: {
@@ -56,6 +91,8 @@ export default function AIPlanPage() {
           budget,
           currency,
           preferences,
+          excludedPlaces,
+          imageBase64,
           userApiKey, // 發送使用者設定的 API key
         }),
       });
@@ -202,6 +239,76 @@ export default function AIPlanPage() {
                 rows={3}
                 className="pixel-input w-full px-4 py-2"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs mb-2">不要推薦的地點（選填）</label>
+              <textarea
+                value={excludedPlaces}
+                onChange={(e) => setExcludedPlaces(e.target.value)}
+                placeholder="例如：不要推薦夜市、不要推薦購物中心..."
+                rows={2}
+                className="pixel-input w-full px-4 py-2"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs mb-2">上傳圖片或輸入圖片連結（選填）</label>
+              <div className="space-y-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setImageFile(file);
+                      setImageUrl('');
+                      const reader = new FileReader();
+                      reader.onload = (e) => {
+                        setImagePreview(e.target?.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="pixel-input w-full px-4 py-2 text-xs"
+                />
+                <div className="text-xs opacity-70 mb-2">或</div>
+                <input
+                  type="url"
+                  value={imageUrl}
+                  onChange={(e) => {
+                    setImageUrl(e.target.value);
+                    setImageFile(null);
+                    setImagePreview(e.target.value);
+                  }}
+                  placeholder="輸入圖片 URL"
+                  className="pixel-input w-full px-4 py-2"
+                />
+                {imagePreview && (
+                  <div className="mt-2">
+                    <img
+                      src={imagePreview}
+                      alt="預覽"
+                      className="max-w-full h-32 object-contain border-2 border-black"
+                      onError={() => setImagePreview(null)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageFile(null);
+                        setImageUrl('');
+                        setImagePreview(null);
+                      }}
+                      className="pixel-button px-2 py-1 text-xs mt-2"
+                    >
+                      清除圖片
+                    </button>
+                  </div>
+                )}
+              </div>
+              <p className="text-[10px] opacity-70 mt-1">
+                AI 會分析圖片中的地點並加入行程中
+              </p>
             </div>
 
             <button

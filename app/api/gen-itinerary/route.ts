@@ -39,7 +39,7 @@ const GEMINI_SYSTEM_PROMPT = `
 
 export async function POST(request: NextRequest) {
   try {
-    const { destination, days, budget, preferences, currency = 'TWD', userApiKey } = await request.json();
+    const { destination, days, budget, preferences, currency = 'TWD', userApiKey, excludedPlaces, imageBase64 } = await request.json();
 
     if (!destination || !days || !budget) {
       return NextResponse.json(
@@ -69,11 +69,31 @@ export async function POST(request: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // 嘗試多個模型名稱（按優先順序）
-    const modelNames = ['gemini-2.5-flash', 'gemini-2.5-pro'];
+    // 嘗試多個模型名稱（按優先順序，如果有圖片則使用支持視覺的模型）
+    const modelNames = imageBase64 
+      ? ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.5-flash', 'gemini-2.5-pro']
+      : ['gemini-2.5-flash', 'gemini-2.5-pro'];
     
     // 計算目標預算（90%）
     const targetBudget = Math.round(budget * 0.9);
+    
+    let imageAnalysisPrompt = '';
+    if (imageBase64) {
+      imageAnalysisPrompt = `
+**圖片分析要求：**
+請仔細分析上傳的圖片，識別圖片中的地點、景點、餐廳、商店等。將這些地點加入行程中，並確保這些地點與目的地 ${destination} 相關。如果圖片中的地點不在 ${destination}，請忽略它們。
+`;
+    }
+
+    let excludedPlacesPrompt = '';
+    if (excludedPlaces && excludedPlaces.trim()) {
+      excludedPlacesPrompt = `
+**絕對不要推薦以下地點或類型：**
+${excludedPlaces}
+
+請確保行程中完全排除這些地點，不要以任何形式推薦它們。
+`;
+    }
     
     const userPrompt = `
 請為我規劃一個 ${days} 天的 ${destination} 旅遊行程。
@@ -82,10 +102,15 @@ export async function POST(request: NextRequest) {
 目標使用預算：${targetBudget} ${currency}（約 90%）
 ${preferences ? `旅遊偏好：${preferences}` : ''}
 
+${imageAnalysisPrompt}
+
+${excludedPlacesPrompt}
+
 **特別注意：**
 1. 所有推薦的地點必須是「目前正常營業」的，絕對不要推薦已停業、永久關閉或暫時歇業的地點。
 2. 總花費應該接近 ${targetBudget} ${currency}（預算的 90%），請充分利用預算規劃優質行程。
 3. 請確保所有地點都是可以實際訪問的，避免推薦已關閉的場所。
+${excludedPlaces && excludedPlaces.trim() ? '4. 絕對不要推薦排除清單中的地點。' : ''}
 
 ${GEMINI_SYSTEM_PROMPT}
 
@@ -99,7 +124,23 @@ ${GEMINI_SYSTEM_PROMPT}
     for (const modelName of modelNames) {
       try {
         const model = genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent(userPrompt);
+        
+        let result;
+        if (imageBase64) {
+          // 如果有圖片，使用視覺模型
+          const imagePart = {
+            inlineData: {
+              data: imageBase64.split(',')[1] || imageBase64, // 移除 data:image/...;base64, 前綴
+              mimeType: imageBase64.startsWith('data:image/') 
+                ? imageBase64.split(';')[0].split(':')[1] 
+                : 'image/jpeg',
+            },
+          };
+          result = await model.generateContent([userPrompt, imagePart]);
+        } else {
+          result = await model.generateContent(userPrompt);
+        }
+        
         const response = await result.response;
         const text = response.text();
         
