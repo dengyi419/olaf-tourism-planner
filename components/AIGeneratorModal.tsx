@@ -30,6 +30,11 @@ export default function AIGeneratorModal({ isOpen, onClose }: AIGeneratorModalPr
     setError('');
 
     try {
+      // 從 localStorage 讀取使用者設定的 API key
+      const userApiKey = typeof window !== 'undefined' 
+        ? localStorage.getItem('user_gemini_api_key') || ''
+        : '';
+
       const response = await fetch('/api/gen-itinerary', {
         method: 'POST',
         headers: {
@@ -41,6 +46,7 @@ export default function AIGeneratorModal({ isOpen, onClose }: AIGeneratorModalPr
           budget,
           currency,
           preferences,
+          userApiKey, // 發送使用者設定的 API key
         }),
       });
 

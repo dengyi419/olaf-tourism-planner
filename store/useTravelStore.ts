@@ -6,7 +6,7 @@ interface TravelState {
   itinerary: DayItinerary[];
   
   // Actions
-  setTripSettings: (settings: TripSettings) => void;
+  setTripSettings: (settings: TripSettings | null) => void;
   setItinerary: (itinerary: DayItinerary[]) => void;
   addDay: (day: DayItinerary) => void;
   updateDay: (dayId: number, updates: Partial<DayItinerary>) => void;

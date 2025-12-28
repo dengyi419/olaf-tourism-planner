@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Clock from './Clock';
+import { Settings } from 'lucide-react';
 
 export default function MainMenu() {
   const router = useRouter();
@@ -56,6 +57,14 @@ export default function MainMenu() {
           className="pixel-button w-full py-6 text-sm"
         >
           3. 查看行程記錄
+        </button>
+
+        <button
+          onClick={() => router.push('/settings')}
+          className="pixel-button w-full py-6 text-sm"
+        >
+          <Settings className="w-4 h-4 inline mr-2" />
+          4. API 金鑰設定
         </button>
       </div>
     </div>

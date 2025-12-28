@@ -39,7 +39,7 @@ const GEMINI_SYSTEM_PROMPT = `
 
 export async function POST(request: NextRequest) {
   try {
-    const { destination, days, budget, preferences, currency = 'TWD' } = await request.json();
+    const { destination, days, budget, preferences, currency = 'TWD', userApiKey } = await request.json();
 
     if (!destination || !days || !budget) {
       return NextResponse.json(
@@ -48,10 +48,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    // 優先使用使用者提供的 API key，否則使用環境變數
+    const apiKey = userApiKey || process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'GEMINI_API_KEY 未設定。請在 .env.local 檔案中設定 GEMINI_API_KEY' },
+        { 
+          error: 'GEMINI_API_KEY 未設定',
+          details: '請在設定頁面輸入您的 Gemini API Key，或在 .env.local 檔案中設定 GEMINI_API_KEY。您可以在 https://makersuite.google.com/app/apikey 取得新的 API 金鑰。',
+          errorCode: 'API_KEY_NOT_SET'
+        },
         { status: 500 }
       );
     }

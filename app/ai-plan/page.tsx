@@ -30,6 +30,11 @@ export default function AIPlanPage() {
     setError('');
 
     try {
+      // 從 localStorage 讀取使用者設定的 API key
+      const userApiKey = typeof window !== 'undefined' 
+        ? localStorage.getItem('user_gemini_api_key') || ''
+        : '';
+
       const response = await fetch('/api/gen-itinerary', {
         method: 'POST',
         headers: {
@@ -41,6 +46,7 @@ export default function AIPlanPage() {
           budget,
           currency,
           preferences,
+          userApiKey, // 發送使用者設定的 API key
         }),
       });
 
@@ -48,6 +54,9 @@ export default function AIPlanPage() {
         const errorData = await response.json();
         if (errorData.errorCode === 'INVALID_API_KEY' && errorData.details) {
           throw new Error(`${errorData.error}\n\n${errorData.details}`);
+        }
+        if (errorData.errorCode === 'API_KEY_NOT_SET' && errorData.details) {
+          throw new Error(`${errorData.error}\n\n${errorData.details}\n\n請前往「API 金鑰設定」頁面設定您的 API 金鑰。`);
         }
         throw new Error(errorData.error || errorData.details || '生成行程失敗');
       }
