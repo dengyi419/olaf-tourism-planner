@@ -9,9 +9,9 @@ interface RouteMapProps {
 }
 export default function RouteMap({ activities, dayId }: RouteMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
-  const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const directionsServiceRef = useRef<any>(null);
+  const directionsRendererRef = useRef<any>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function RouteMap({ activities, dayId }: RouteMapProps) {
         stopover: true,
       }));
 
-      const request: google.maps.DirectionsRequest = {
+      const request: any = {
         origin: activities[0].googleMapQuery,
         destination: activities[activities.length - 1].googleMapQuery,
         waypoints: waypoints.length > 0 ? waypoints : undefined,
@@ -68,7 +68,7 @@ export default function RouteMap({ activities, dayId }: RouteMapProps) {
         optimizeWaypoints: true,
       };
 
-      directionsServiceRef.current.route(request, (result, status) => {
+      directionsServiceRef.current.route(request, (result: any, status: string) => {
         if (status === 'OK' && directionsRendererRef.current && result) {
           directionsRendererRef.current.setDirections(result);
           
@@ -84,7 +84,7 @@ export default function RouteMap({ activities, dayId }: RouteMapProps) {
     } else if (activities.length === 1 && mapInstanceRef.current) {
       // 只有一個地點，使用地理編碼
       const geocoder = new google.maps.Geocoder();
-      geocoder.geocode({ address: activities[0].googleMapQuery }, (results, status) => {
+      geocoder.geocode({ address: activities[0].googleMapQuery }, (results: any, status: string) => {
         if (status === 'OK' && results && results[0] && mapInstanceRef.current) {
           mapInstanceRef.current.setCenter(results[0].geometry.location);
           mapInstanceRef.current.setZoom(15);
