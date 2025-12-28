@@ -12,6 +12,14 @@
 
 **重要**：必須使用 `service_role` key，不是 `anon` key！
 
+**如何確認是 service_role key**：
+1. 前往 Supabase Dashboard → Settings → API
+2. 找到 "service_role" key（通常在 "Project API keys" 區域的最下方）
+3. 複製這個 key（不是 "anon" key）
+4. 可以通過 JWT 解碼驗證：如果 JWT payload 中的 `"role"` 是 `"service_role"`，那就是正確的
+
+**錯誤示例**：如果 JWT payload 顯示 `"role":"anon"`，那就是錯誤的 key！
+
 #### 步驟 2：檢查 Vercel 日誌
 
 1. 前往 Vercel Dashboard → Deployments → 最新部署
