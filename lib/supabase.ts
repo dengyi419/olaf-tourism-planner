@@ -1,11 +1,31 @@
-// 動態初始化 Supabase 客戶端（避免構建時解析）
-// 使用 Function 構造函數來完全避免 webpack 在構建時解析模組
+// 動態初始化 Supabase 客戶端
+// 在服務器端使用 require，在客戶端使用動態 import
+let supabaseModule: any = null;
+
+// 嘗試在模組加載時預先載入（僅在服務器端）
+if (typeof window === 'undefined') {
+  try {
+    // 在 Node.js 環境中使用 require
+    supabaseModule = require('@supabase/supabase-js');
+  } catch (error) {
+    // 如果 require 失敗，將在運行時使用動態 import
+    console.warn('無法預先載入 Supabase 模組，將在運行時動態載入');
+  }
+}
+
 export async function initializeSupabase() {
   try {
-    // 使用 Function 構造函數動態執行 import，完全避免構建時解析
-    const dynamicImport = new Function('specifier', 'return import(specifier)');
-    const supabaseModule = await dynamicImport('@supabase/supabase-js');
-    const { createClient } = supabaseModule;
+    let createClient: any;
+    
+    // 如果已經載入，直接使用
+    if (supabaseModule) {
+      createClient = supabaseModule.createClient;
+    } else {
+      // 否則使用動態 import（適用於客戶端或運行時）
+      const module = await import('@supabase/supabase-js');
+      createClient = module.createClient;
+      supabaseModule = module; // 緩存模組
+    }
     
     const supabaseUrl = process.env.SUPABASE_URL || '';
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -26,8 +46,9 @@ export async function initializeSupabase() {
       console.warn('將使用內存存儲');
       return null;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Supabase 客戶端初始化失敗，將使用內存存儲:', error);
+    console.error('錯誤詳情:', error?.message || error);
     return null;
   }
 }
