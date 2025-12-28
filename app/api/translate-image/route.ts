@@ -80,6 +80,16 @@ export async function POST(request: NextRequest) {
           continue;
         }
         
+        // 如果是速率限制或配額錯誤，直接返回（不要嘗試下一個模型）
+        const errorStr = (error.message || error.toString() || '').toLowerCase();
+        if (errorStr.includes('too many requests') || 
+            errorStr.includes('rate limit') || 
+            errorStr.includes('quota exceeded') ||
+            errorStr.includes('429') ||
+            errorStr.includes('403')) {
+          throw error;
+        }
+        
         // 如果是其他錯誤，直接返回
         throw error;
       }

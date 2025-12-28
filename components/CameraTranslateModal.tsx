@@ -121,6 +121,14 @@ export default function CameraTranslateModal({ isOpen, onClose }: CameraTranslat
         const errorData = await response.json();
         const errorMessage = errorData.error || '翻譯失敗';
         const isQuotaError = errorData.isQuotaError || false;
+        const errorStr = errorMessage.toLowerCase();
+        
+        // 檢查是否是 "too many requests" 錯誤
+        const isTooManyRequests = errorStr.includes('too many requests') || 
+                                  errorStr.includes('too_many_requests') ||
+                                  errorStr.includes('請求次數過多') ||
+                                  errorStr.includes('速率限制') ||
+                                  response.status === 429;
         
         // 如果是配額錯誤（403），不重試，直接顯示錯誤
         if (isQuotaError || response.status === 403 || errorMessage.includes('配額已用完') || errorMessage.includes('RPD')) {
@@ -130,20 +138,21 @@ export default function CameraTranslateModal({ isOpen, onClose }: CameraTranslat
           return;
         }
         
-        // 如果是速率限制錯誤（429），提供重試選項
-        if (errorMessage.includes('請求次數過多') || errorMessage.includes('速率限制') || errorMessage.includes('429') || response.status === 429) {
+        // 如果是速率限制錯誤（429 或 "too many requests"），提供重試選項
+        if (isTooManyRequests) {
           if (retryCount < 3) {
-            setError(`${errorMessage}\n\n將在 5 秒後自動重試...`);
+            const waitTime = 5 + (retryCount * 2); // 遞增等待時間：5秒、7秒、9秒
+            setError(`${errorMessage}\n\n將在 ${waitTime} 秒後自動重試 (${retryCount + 1}/3)...`);
             setRetryCount(retryCount + 1);
             
-            // 等待 5 秒後自動重試
+            // 等待後自動重試
             setTimeout(() => {
               handleTranslate(true);
-            }, 5000);
+            }, waitTime * 1000);
             setIsLoading(false);
             return;
           } else {
-            setError(`${errorMessage}\n\n已達到最大重試次數，請稍後再試`);
+            setError(`${errorMessage}\n\n已達到最大重試次數，請稍後再試（建議等待 30-60 秒）`);
             setRetryCount(0);
           }
         } else {
@@ -158,24 +167,32 @@ export default function CameraTranslateModal({ isOpen, onClose }: CameraTranslat
     } catch (error: any) {
       console.error('翻譯錯誤:', error);
       const errorMessage = error.message || '翻譯時發生錯誤';
+      const errorStr = errorMessage.toLowerCase();
+      
+      // 檢查是否是 "too many requests" 錯誤
+      const isTooManyRequests = errorStr.includes('too many requests') || 
+                                errorStr.includes('too_many_requests') ||
+                                errorStr.includes('請求次數過多') ||
+                                errorStr.includes('速率限制');
       
       // 如果是配額錯誤，不重試
       if (errorMessage.includes('配額已用完') || errorMessage.includes('RPD') || errorMessage.includes('403')) {
         setError(errorMessage);
         setRetryCount(0);
       }
-      // 如果是速率限制錯誤，提供重試選項
-      else if (errorMessage.includes('請求次數過多') || errorMessage.includes('速率限制') || errorMessage.includes('429')) {
+      // 如果是速率限制錯誤（包括 "too many requests"），提供重試選項
+      else if (isTooManyRequests || errorMessage.includes('429')) {
         if (retryCount < 3) {
-          setError(`${errorMessage}\n\n將在 5 秒後自動重試...`);
+          const waitTime = 5 + (retryCount * 2); // 遞增等待時間：5秒、7秒、9秒
+          setError(`${errorMessage}\n\n將在 ${waitTime} 秒後自動重試 (${retryCount + 1}/3)...`);
           setRetryCount(retryCount + 1);
           
-          // 等待 5 秒後自動重試
+          // 等待後自動重試
           setTimeout(() => {
             handleTranslate(true);
-          }, 5000);
+          }, waitTime * 1000);
         } else {
-          setError(`${errorMessage}\n\n已達到最大重試次數，請稍後再試`);
+          setError(`${errorMessage}\n\n已達到最大重試次數，請稍後再試（建議等待 30-60 秒）`);
           setRetryCount(0);
         }
       } else {
