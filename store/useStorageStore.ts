@@ -167,9 +167,20 @@ export const useStorageStore = create<StorageState>()(
           });
           if (!response.ok) {
             console.error('Failed to delete trip from server');
+            // 如果刪除失敗，恢復本地狀態
+            const state = get();
+            // 重新同步以獲取正確的數據
+            await get().syncFromServer();
+            return;
           }
+          
+          // 刪除成功後，重新同步以確保所有設備一致
+          console.log('行程刪除成功，重新同步數據');
+          await get().syncFromServer();
         } catch (error) {
           console.error('Error deleting trip:', error);
+          // 發生錯誤時，重新同步以確保數據一致
+          await get().syncFromServer();
         }
       },
 

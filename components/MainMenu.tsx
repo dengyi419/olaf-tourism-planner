@@ -51,6 +51,40 @@ export default function MainMenu() {
       
       // 從服務器同步行程
       syncFromServer();
+      
+      // 設置定期同步（每30秒同步一次）
+      const syncInterval = setInterval(() => {
+        if (status === 'authenticated') {
+          console.log('定期同步行程數據');
+          syncFromServer();
+        }
+      }, 30000); // 30秒
+      
+      // 監聽頁面可見性變化，當頁面重新可見時同步
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible' && status === 'authenticated') {
+          console.log('頁面重新可見，同步行程數據');
+          syncFromServer();
+        }
+      };
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      // 監聽頁面焦點變化
+      const handleFocus = () => {
+        if (status === 'authenticated') {
+          console.log('頁面獲得焦點，同步行程數據');
+          syncFromServer();
+        }
+      };
+      
+      window.addEventListener('focus', handleFocus);
+      
+      return () => {
+        clearInterval(syncInterval);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('focus', handleFocus);
+      };
     } else if (status === 'unauthenticated') {
       // 如果未登入，清除所有數據
       console.log('用戶未登入，清除所有數據');

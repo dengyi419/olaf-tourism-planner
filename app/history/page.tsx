@@ -91,15 +91,18 @@ export default function HistoryPage() {
     }
   };
 
-  const handleDeleteTrip = (tripId: string) => {
+  const handleDeleteTrip = async (tripId: string) => {
     if (confirm('確定要刪除此行程嗎？')) {
-      deleteTrip(tripId);
+      await deleteTrip(tripId);
       if (selectedTrip === tripId) {
         clearCurrentTrip();
         setSelectedTrip(null);
         setItinerary([]);
         setTripSettings(null);
       }
+      // 刪除後重新同步（deleteTrip 內部已經會同步，這裡確保 UI 更新）
+      const { syncFromServer } = useStorageStore.getState();
+      await syncFromServer();
     }
   };
 
