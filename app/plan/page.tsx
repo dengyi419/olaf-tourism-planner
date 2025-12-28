@@ -493,8 +493,71 @@ export default function PlanPage() {
         ) : (
           <div className="space-y-6">
             <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-2xl">{tripSettings?.destination || '我的行程'}</h1>
+              <div className="flex-1">
+                {isEditingName ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={tripName || useStorageStore.getState().currentTrip?.name || ''}
+                      onChange={(e) => {
+                        setTripName(e.target.value);
+                        // 同時更新 currentTrip 的名稱
+                        const currentTrip = useStorageStore.getState().currentTrip;
+                        if (currentTrip) {
+                          useStorageStore.setState({
+                            currentTrip: {
+                              ...currentTrip,
+                              name: e.target.value,
+                            },
+                          });
+                        }
+                      }}
+                      onBlur={() => {
+                        setIsEditingName(false);
+                        // 保存名稱變更
+                        if (tripSettings && itinerary.length > 0) {
+                          const name = tripName.trim() || useStorageStore.getState().currentTrip?.name || `行程 ${new Date().toLocaleDateString('zh-TW')}`;
+                          updateCurrentTrip(tripSettings, itinerary);
+                          // 如果已保存，更新 savedTrips
+                          const currentTrip = useStorageStore.getState().currentTrip;
+                          if (currentTrip?.id) {
+                            const savedTrips = useStorageStore.getState().savedTrips;
+                            const tripIndex = savedTrips.findIndex(t => t.id === currentTrip.id);
+                            if (tripIndex >= 0) {
+                              const updatedTrips = [...savedTrips];
+                              updatedTrips[tripIndex] = { ...updatedTrips[tripIndex], name };
+                              useStorageStore.setState({ savedTrips: updatedTrips });
+                            }
+                          }
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.currentTarget.blur();
+                        }
+                      }}
+                      className="pixel-input text-2xl font-bold px-2 py-1"
+                      autoFocus
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <h1 
+                      className="text-2xl cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+                      onClick={() => setIsEditingName(true)}
+                      title="點擊編輯名稱"
+                    >
+                      {tripName || useStorageStore.getState().currentTrip?.name || tripSettings?.destination || '我的行程'}
+                    </h1>
+                    <button
+                      onClick={() => setIsEditingName(true)}
+                      className="pixel-button px-2 py-1 text-xs"
+                      title="編輯名稱"
+                    >
+                      編輯
+                    </button>
+                  </div>
+                )}
                 <p className="text-xs mt-1">
                   {itinerary.length > 0 ? `${itinerary.length} 天行程規劃` : '開始新增您的行程'}
                 </p>
