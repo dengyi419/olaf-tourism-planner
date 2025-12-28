@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
         throw checkError;
       }
 
-      const tripData = {
+      const tripData: any = {
         id: tripId,
         user_email: session.user.email, // 確保設置用戶 email
         name: tripName,
@@ -155,10 +155,13 @@ export async function POST(request: NextRequest) {
       } else {
         console.log('創建新行程:', tripId);
         // 創建新行程
-        tripData.created_at = now;
+        const newTripData = {
+          ...tripData,
+          created_at: now,
+        };
         const { data, error } = await supabase
           .from('trips')
-          .insert(tripData)
+          .insert(newTripData)
           .select()
           .single();
 
