@@ -146,31 +146,43 @@ export const useStorageStore = create<StorageState>()(
 
       updateCurrentTrip: async (settings, itinerary) => {
         const state = get();
-        if (state.currentTrip) {
-          const updatedTrip = {
-            ...state.currentTrip,
-            settings,
-            itinerary,
-            updatedAt: new Date().toISOString(),
-          };
-
-          // 更新本地狀態
-          set({ currentTrip: updatedTrip });
-
-          // 同步到後端
-          try {
-            const response = await fetch('/api/trips', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(updatedTrip),
-            });
-            if (!response.ok) {
-              console.error('Failed to sync trip update to server');
-            }
-          } catch (error) {
-            console.error('Error syncing trip update:', error);
+        const now = new Date().toISOString();
+        
+        // 生成唯一 ID：使用時間戳 + 隨機字符串，確保唯一性
+        const generateUniqueId = () => {
+          const timestamp = Date.now();
+          const randomStr = Math.random().toString(36).substring(2, 9);
+          return `trip-${timestamp}-${randomStr}`;
+        };
+        
+        // 如果沒有 currentTrip 或 currentTrip 沒有 ID，生成新 ID（創建新行程）
+        // 如果 currentTrip 有 ID 且已在 savedTrips 中，使用原 ID（更新現有行程）
+        let tripId: string;
+        if (state.currentTrip?.id) {
+          const isAlreadySaved = state.savedTrips.some(t => t.id === state.currentTrip!.id);
+          if (isAlreadySaved) {
+            // 已保存的行程，使用原 ID（更新）
+            tripId = state.currentTrip.id;
+          } else {
+            // 有 ID 但未保存，生成新 ID（避免覆蓋資料庫中的舊行程）
+            tripId = generateUniqueId();
           }
+        } else {
+          // 沒有 currentTrip 或沒有 ID，生成新 ID（創建新行程）
+          tripId = generateUniqueId();
         }
+        
+        const updatedTrip = {
+          id: tripId,
+          name: state.currentTrip?.name || `行程 ${new Date().toLocaleDateString('zh-TW')}`,
+          settings,
+          itinerary,
+          createdAt: state.currentTrip?.createdAt || now,
+          updatedAt: now,
+        };
+
+        // 更新本地狀態（但不自動保存到後端，需要用戶手動點擊「儲存」）
+        set({ currentTrip: updatedTrip });
       },
 
       syncFromServer: async () => {
