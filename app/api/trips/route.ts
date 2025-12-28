@@ -10,22 +10,30 @@ async function initializeSupabase(): Promise<any> {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
     if (!supabaseUrl || !supabaseServiceKey) {
+      console.warn('Supabase 環境變數未設置');
       return null;
     }
 
-    // 使用 Function 構造函數動態執行 require，完全避免 webpack 解析
-    const requireModule = new Function('moduleName', 'return require(moduleName)');
-    const supabaseModule = requireModule('@supabase/supabase-js');
+    // 使用動態 import，但通過字符串拼接避免 webpack 靜態分析
+    // 這樣 webpack 無法在構建時解析模組路徑
+    const moduleName = '@supabase' + '/supabase-js';
+    const supabaseModule = await import(moduleName);
     const { createClient } = supabaseModule;
 
-    return createClient(supabaseUrl, supabaseServiceKey, {
+    const client = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
       },
     });
+    
+    console.log('Supabase 客戶端初始化成功');
+    return client;
   } catch (error: any) {
     console.error('Supabase 初始化失敗:', error?.message || error);
+    if (error?.code) {
+      console.error('錯誤代碼:', error.code);
+    }
     return null;
   }
 }
