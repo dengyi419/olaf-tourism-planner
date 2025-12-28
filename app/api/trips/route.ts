@@ -2,20 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { DayItinerary, TripSettings } from '@/types';
-
-// 直接導入 Supabase，讓 Next.js 正確打包
-// 使用 try-catch 包裹以避免構建時錯誤（如果模組不存在）
-let createClientFn: any = null;
-let supabaseAvailable = false;
-
-try {
-  const supabaseModule = require('@supabase/supabase-js');
-  createClientFn = supabaseModule.createClient;
-  supabaseAvailable = true;
-} catch (error) {
-  // 構建時如果模組不存在，會在運行時使用動態 import
-  console.warn('Supabase 模組在構建時不可用，將在運行時動態載入');
-}
+// 直接導入 Supabase，讓 Next.js 正確打包到 serverless 函數中
+import { createClient } from '@supabase/supabase-js';
 
 async function initializeSupabase(): Promise<any> {
   try {
@@ -25,22 +13,6 @@ async function initializeSupabase(): Promise<any> {
     if (!supabaseUrl || !supabaseServiceKey) {
       console.warn('Supabase 環境變數未設置');
       return null;
-    }
-
-    let createClient: any;
-    
-    // 如果構建時已載入，直接使用
-    if (supabaseAvailable && createClientFn) {
-      createClient = createClientFn;
-    } else {
-      // 否則在運行時動態載入
-      try {
-        const supabaseModule = await import('@supabase/supabase-js');
-        createClient = supabaseModule.createClient;
-      } catch (importError: any) {
-        console.error('無法載入 @supabase/supabase-js 模組:', importError?.message || importError);
-        return null;
-      }
     }
 
     const client = createClient(supabaseUrl, supabaseServiceKey, {
