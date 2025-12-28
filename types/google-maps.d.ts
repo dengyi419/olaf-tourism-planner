@@ -61,7 +61,14 @@ interface Window {
       places?: {
         AutocompleteService: new () => google.maps.places.AutocompleteService;
         PlacesService: new (container: HTMLElement) => google.maps.places.PlacesService;
-        PlacesServiceStatus: typeof google.maps.places.PlacesServiceStatus;
+        PlacesServiceStatus: {
+          OK: 'OK';
+          ZERO_RESULTS: 'ZERO_RESULTS';
+          OVER_QUERY_LIMIT: 'OVER_QUERY_LIMIT';
+          REQUEST_DENIED: 'REQUEST_DENIED';
+          INVALID_REQUEST: 'INVALID_REQUEST';
+          NOT_FOUND: 'NOT_FOUND';
+        };
       };
     };
   };
