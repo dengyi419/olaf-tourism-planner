@@ -13,11 +13,15 @@ try {
         persistSession: false,
       },
     });
+    console.log('Supabase 客戶端初始化成功，URL:', supabaseUrl.substring(0, 30) + '...');
   } else {
-    console.warn('Supabase 環境變數未設置，將使用內存存儲');
+    console.warn('Supabase 環境變數未設置:');
+    console.warn('  SUPABASE_URL:', supabaseUrl ? '已設置' : '未設置');
+    console.warn('  SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? '已設置' : '未設置');
+    console.warn('將使用內存存儲');
   }
 } catch (error) {
-  console.warn('Supabase 客戶端初始化失敗，將使用內存存儲:', error);
+  console.error('Supabase 客戶端初始化失敗，將使用內存存儲:', error);
 }
 
 export const supabase = supabaseClient;
