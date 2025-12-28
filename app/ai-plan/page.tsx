@@ -197,6 +197,17 @@ export default function AIPlanPage() {
               />
             </div>
 
+            <div>
+              <label className="block text-xs mb-2">旅遊開始日期 *</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="pixel-input w-full px-4 py-2"
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs mb-2">天數 *</label>
