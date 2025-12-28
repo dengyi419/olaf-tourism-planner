@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 隱藏滾動條但保持滾動功能 */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
 /* 復古像素風格字體 */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 

@@ -105,13 +105,13 @@ export default function MainMenu() {
 
   return (
     <div className="min-h-screen bg-[#f5f5dc]">
-      {/* 手機版頂部狀態列 */}
+      {/* 手機版頂部狀態列 - 可滑動 */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b-4 border-black">
-        <div className="flex items-center justify-between p-2">
-          <div className="flex items-center gap-2">
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-2 p-2 min-w-max">
             <button
               onClick={() => setShowTripList(!showTripList)}
-              className="pixel-button px-3 py-2 text-xs"
+              className="pixel-button px-3 py-2 text-xs whitespace-nowrap flex-shrink-0"
             >
               <Menu className="w-4 h-4 inline mr-1" />
               <span>行程</span>
@@ -119,7 +119,7 @@ export default function MainMenu() {
             {hasCurrentTrip && (
               <button
                 onClick={() => setShowCurrentTripModal(true)}
-                className="pixel-button px-3 py-2 text-xs"
+                className="pixel-button px-3 py-2 text-xs whitespace-nowrap flex-shrink-0"
               >
                 <FileText className="w-4 h-4 inline mr-1" />
                 <span>當前行程</span>
@@ -127,16 +127,18 @@ export default function MainMenu() {
             )}
             <button
               onClick={() => setShowCameraModal(true)}
-              className="pixel-button px-3 py-2 text-xs"
+              className="pixel-button px-3 py-2 text-xs whitespace-nowrap flex-shrink-0"
             >
               <Camera className="w-4 h-4 inline mr-1" />
               <span>翻譯</span>
             </button>
-          </div>
-          <div className="flex items-center gap-2">
             <LanguageSelector />
-            <UserMenu />
-            <Clock />
+            <div className="flex-shrink-0">
+              <UserMenu />
+            </div>
+            <div className="flex-shrink-0">
+              <Clock />
+            </div>
           </div>
         </div>
       </div>
