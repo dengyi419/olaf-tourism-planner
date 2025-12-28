@@ -43,14 +43,21 @@ export async function POST(request: NextRequest) {
         const genAI = new GoogleGenerativeAI(userApiKey);
         const model = genAI.getGenerativeModel({ model: modelName });
 
-        const prompt = `請識別這張圖片中的文字，並將所有文字翻譯成${targetLanguage}。如果圖片中沒有文字，請回覆「圖片中沒有可識別的文字」。
+        const prompt = `You are a professional translator. Please identify all text in this image and translate it to ${targetLanguage}.
 
-要求：
-1. 識別圖片中的所有文字（包括標誌、菜單、路牌等）
-2. 將所有文字翻譯成${targetLanguage}
-3. 保持原始格式和佈局
-4. 如果有多段文字，請分行顯示
-5. 只返回翻譯後的文字，不要添加額外說明`;
+Requirements:
+1. Identify ALL text in the image (including signs, menus, road signs, labels, etc.)
+2. Translate ALL text to ${targetLanguage}
+3. Maintain the original format and layout as much as possible
+4. If there are multiple lines or sections, display them on separate lines
+5. ONLY return the translated text, do NOT add any explanations, notes, or additional text
+6. If the image contains no text, reply with: "圖片中沒有可識別的文字" (if target language is Chinese) or "No text found in image" (if target language is English)
+
+Important: 
+- Translate every single word, character, and number you see
+- Do not skip any text
+- Do not add your own comments
+- Return ONLY the translated content`;
 
         const result = await model.generateContent([
           prompt,
