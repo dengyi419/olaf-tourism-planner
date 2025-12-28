@@ -118,11 +118,12 @@ export default function AIPlanPage() {
       };
       setTripSettings(settings);
 
-      // 設定行程（為每一天添加日期）
-      const today = new Date();
+      // 設定行程（為每一天添加日期，使用設定的開始日期或今天）
+      const baseDate = startDate || new Date().toISOString().split('T')[0];
+      const baseDateObj = new Date(baseDate);
       const itineraryWithDates = data.itinerary.map((day: any, index: number) => ({
         ...day,
-        date: new Date(today.getTime() + index * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        date: new Date(baseDateObj.getTime() + index * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       }));
 
       setItinerary(itineraryWithDates);

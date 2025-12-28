@@ -117,7 +117,7 @@ export default function MainMenu() {
         <Clock />
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 p-4 pt-14 lg:pt-20">
+      <div className="flex flex-col lg:flex-row gap-4 p-4 pt-24 lg:pt-20">
         {/* 左側：行程列表（桌面版顯示，手機版隱藏） */}
         <div className="hidden lg:block w-80 flex-shrink-0">
           <TripList />

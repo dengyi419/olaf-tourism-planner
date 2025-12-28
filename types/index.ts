@@ -20,6 +20,7 @@ export type TripSettings = {
   totalBudget: number;
   destination: string;
   currency: string;
+  startDate?: string; // 旅遊開始日期 (YYYY-MM-DD)
 };
 
 export type AIItineraryResponse = {

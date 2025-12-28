@@ -344,5 +344,3 @@ export async function DELETE(request: NextRequest) {
 
 ---
 
-需要我幫您實現 Supabase 遷移嗎？
-

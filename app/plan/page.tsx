@@ -21,6 +21,7 @@ export default function PlanPage() {
   const [destination, setDestination] = useState('');
   const [budget, setBudget] = useState(50000);
   const [currency, setCurrency] = useState('TWD');
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   
   // AI 規劃相關狀態
   const [showAIPanel, setShowAIPanel] = useState(false);
@@ -44,21 +45,38 @@ export default function PlanPage() {
       alert('請輸入目的地');
       return;
     }
+    if (!startDate) {
+      alert('請選擇旅遊開始日期');
+      return;
+    }
     const settings = {
       totalBudget: budget,
       destination,
       currency,
+      startDate,
     };
     setTripSettings(settings);
-    updateCurrentTrip(settings, itinerary);
+    // 更新行程日期
+    const updatedItinerary = itinerary.map((day, index) => {
+      const dayDate = new Date(startDate);
+      dayDate.setDate(dayDate.getDate() + index);
+      return {
+        ...day,
+        date: dayDate.toISOString().split('T')[0],
+      };
+    });
+    setItinerary(updatedItinerary);
+    updateCurrentTrip(settings, updatedItinerary);
   };
 
   const handleAddDay = () => {
     const newDayId = itinerary.length > 0 ? Math.max(...itinerary.map(d => d.dayId)) + 1 : 1;
-    const today = new Date();
+    // 使用設定的開始日期，如果沒有則使用今天
+    const baseDate = tripSettings?.startDate || new Date().toISOString().split('T')[0];
+    const baseDateObj = new Date(baseDate);
     const newDay: DayItinerary = {
       dayId: newDayId,
-      date: new Date(today.getTime() + (newDayId - 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      date: new Date(baseDateObj.getTime() + (newDayId - 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       activities: [],
     };
     addDay(newDay);
@@ -77,6 +95,10 @@ export default function PlanPage() {
     if (trip) {
       setTripSettings(trip.settings);
       setItinerary(trip.itinerary);
+      // 載入開始日期
+      if (trip.settings.startDate) {
+        setStartDate(trip.settings.startDate);
+      }
       setShowTripSelection(false);
     }
   };

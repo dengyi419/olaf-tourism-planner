@@ -74,13 +74,13 @@ export default function CameraTranslateModal({ isOpen, onClose }: CameraTranslat
     setTranslatedText('');
 
     try {
-      // 獲取用戶的 API key
+      // 獲取用戶的 API key（與 AI 行程使用同一個）
       const userApiKey = typeof window !== 'undefined' 
-        ? localStorage.getItem('GEMINI_API_KEY') || ''
+        ? localStorage.getItem('user_gemini_api_key') || ''
         : '';
 
       if (!userApiKey) {
-        setError('請先設定 Gemini API Key');
+        setError('請先前往「API 金鑰設定」頁面設定您的 Gemini API Key');
         setIsLoading(false);
         return;
       }
