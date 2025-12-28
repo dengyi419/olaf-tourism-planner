@@ -32,6 +32,10 @@ export default function AIPlanPage() {
     : false;
 
   const handleGenerate = async () => {
+    if (!tripName.trim()) {
+      setError('請輸入行程名稱');
+      return;
+    }
     if (!destination.trim()) {
       setError('請輸入目的地');
       return;
@@ -203,6 +207,16 @@ export default function AIPlanPage() {
           )}
 
           <div className="space-y-4">
+            <div>
+              <label className="block text-xs mb-2">行程名稱 *</label>
+              <input
+                type="text"
+                value={tripName}
+                onChange={(e) => setTripName(e.target.value)}
+                placeholder="例如：2024 東京之旅"
+                className="pixel-input w-full px-4 py-2"
+              />
+            </div>
             <div>
               <label className="block text-xs mb-2">目的地 *</label>
               <input

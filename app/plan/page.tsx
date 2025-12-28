@@ -43,6 +43,10 @@ export default function PlanPage() {
   }, [tripSettings, itinerary, updateCurrentTrip]);
 
   const handleSaveSettings = () => {
+    if (!tripName.trim()) {
+      alert('請輸入行程名稱');
+      return;
+    }
     if (!destination.trim()) {
       alert('請輸入目的地');
       return;
@@ -69,6 +73,17 @@ export default function PlanPage() {
     });
     setItinerary(updatedItinerary);
     updateCurrentTrip(settings, updatedItinerary);
+    // 更新 currentTrip 的名稱
+    const name = tripName.trim() || `行程 ${new Date().toLocaleDateString('zh-TW')}`;
+    const currentTrip = useStorageStore.getState().currentTrip;
+    if (currentTrip) {
+      useStorageStore.setState({
+        currentTrip: {
+          ...currentTrip,
+          name,
+        },
+      });
+    }
   };
 
   const handleAddDay = () => {
@@ -98,6 +113,10 @@ export default function PlanPage() {
     if (trip) {
       setTripSettings(trip.settings);
       setItinerary(trip.itinerary);
+      // 載入行程名稱
+      if (trip.name) {
+        setTripName(trip.name);
+      }
       // 載入開始日期
       if (trip.settings.startDate) {
         setStartDate(trip.settings.startDate);
@@ -114,13 +133,14 @@ export default function PlanPage() {
         const { savedTrips, currentTrip } = useStorageStore.getState();
         const isAlreadySaved = currentTrip?.id && savedTrips.some(t => t.id === currentTrip.id);
         
+        const name = tripName.trim() || useStorageStore.getState().currentTrip?.name || `行程 ${new Date().toLocaleDateString('zh-TW')}`;
         if (!isAlreadySaved) {
           // 如果還沒保存過，強制生成新 ID 保存，避免覆蓋
-          await saveCurrentTrip(undefined, tripSettings, itinerary, true);
+          await saveCurrentTrip(name, tripSettings, itinerary, true);
           console.log('已自動保存舊行程（新 ID）');
         } else {
           // 如果已經保存過，更新現有行程
-          await saveCurrentTrip(undefined, tripSettings, itinerary, false);
+          await saveCurrentTrip(name, tripSettings, itinerary, false);
           console.log('已更新舊行程');
         }
       } catch (error) {
@@ -397,6 +417,16 @@ export default function PlanPage() {
                 </div>
 
                 <div className="space-y-4">
+                <div>
+                  <label className="block text-xs mb-2">行程名稱 *</label>
+                  <input
+                    type="text"
+                    value={tripName}
+                    onChange={(e) => setTripName(e.target.value)}
+                    placeholder="例如：2024 東京之旅"
+                    className="pixel-input w-full px-4 py-2"
+                  />
+                </div>
                 <div>
                   <label className="block text-xs mb-2">目的地 *</label>
                   <input
