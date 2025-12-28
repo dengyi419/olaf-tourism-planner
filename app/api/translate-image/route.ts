@@ -43,23 +43,36 @@ export async function POST(request: NextRequest) {
         const genAI = new GoogleGenerativeAI(userApiKey);
         const model = genAI.getGenerativeModel({ model: modelName });
 
-        // 構建更精確的 prompt
-        const prompt = `Translate all text in this image to ${targetLanguage}.
+        // 構建人性化、簡單易懂的翻譯 prompt
+        const prompt = `You are a helpful travel translator. Translate all text in this image to ${targetLanguage} in a natural, easy-to-understand way.
 
-CRITICAL INSTRUCTIONS:
-1. Identify EVERY piece of text visible in the image (signs, menus, labels, captions, numbers, etc.)
-2. Translate ALL identified text to ${targetLanguage}
-3. Preserve the original structure (line breaks, sections, etc.)
-4. Return ONLY the translated text - NO explanations, NO notes, NO additional commentary
-5. If no text is found, return exactly: "圖片中沒有可識別的文字" (for Chinese) or "No text found in image" (for other languages)
+SPECIAL FOCUS:
+- Road signs and traffic signs: Translate clearly and simply, keeping the meaning easy to understand
+- Restaurant menus: Translate dish names naturally, making them sound appetizing and easy to understand. For prices, keep the numbers and currency symbols
+- Store signs and labels: Translate in a way that travelers can easily understand
+- Public notices and warnings: Keep the meaning clear and important
 
-DO NOT:
-- Add explanations or notes
-- Skip any text
-- Add your own comments
-- Include source language text
+TRANSLATION STYLE:
+- Use natural, conversational language that locals would use
+- Make it simple and easy to understand for travelers
+- Keep important information (numbers, prices, times) unchanged
+- For menu items, translate in a way that sounds appetizing and natural
+- For road signs, prioritize clarity and safety
 
-ONLY return the translated content.`;
+INSTRUCTIONS:
+1. Identify ALL text in the image (signs, menus, labels, notices, etc.)
+2. Translate everything to ${targetLanguage} in a natural, human-friendly way
+3. Keep the original layout and structure (line breaks, sections)
+4. Return ONLY the translated text - no explanations, no notes, no additional commentary
+5. If no text is found, return: "圖片中沒有可識別的文字" (for Chinese) or "No text found in image" (for other languages)
+
+IMPORTANT:
+- Translate every word, but make it sound natural and easy to understand
+- For menus: Make dish names sound appetizing and natural
+- For signs: Prioritize clarity and safety
+- Do NOT add explanations or notes
+- Do NOT skip any text
+- Return ONLY the translated content`;
 
         // 使用正確的 Gemini API 格式
         const result = await model.generateContent({
