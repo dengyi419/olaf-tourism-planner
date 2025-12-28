@@ -14,10 +14,15 @@ export default function CameraTranslateModal({ isOpen, onClose }: CameraTranslat
   const [translatedText, setTranslatedText] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastRequestTime, setLastRequestTime] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const { language } = useLanguageStore();
+  
+  // 最小請求間隔（毫秒）- 防止快速連續請求
+  const MIN_REQUEST_INTERVAL = 2000; // 2秒
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,12 +71,23 @@ export default function CameraTranslateModal({ isOpen, onClose }: CameraTranslat
     }
   };
 
-  const handleTranslate = async () => {
+  const handleTranslate = async (isRetry = false) => {
     if (!image) return;
+
+    // 檢查請求間隔
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastRequestTime;
+    
+    if (!isRetry && timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+      const waitTime = Math.ceil((MIN_REQUEST_INTERVAL - timeSinceLastRequest) / 1000);
+      setError(`請等待 ${waitTime} 秒後再試`);
+      return;
+    }
 
     setIsLoading(true);
     setError('');
     setTranslatedText('');
+    setLastRequestTime(now);
 
     try {
       // 獲取用戶的 API key（與 AI 行程使用同一個）
@@ -87,9 +103,8 @@ export default function CameraTranslateModal({ isOpen, onClose }: CameraTranslat
 
       // 將 base64 圖片轉換為 blob
       const base64Data = image.split(',')[1];
-      const blob = await fetch(`data:image/jpeg;base64,${base64Data}`).then(r => r.blob());
 
-      // 調用翻譯 API
+      // 調用翻譯 API（帶重試機制）
       const response = await fetch('/api/translate-image', {
         method: 'POST',
         headers: {
@@ -104,14 +119,55 @@ export default function CameraTranslateModal({ isOpen, onClose }: CameraTranslat
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || '翻譯失敗');
+        const errorMessage = errorData.error || '翻譯失敗';
+        
+        // 如果是速率限制錯誤，提供重試選項
+        if (errorMessage.includes('請求次數過多') || errorMessage.includes('429') || response.status === 429) {
+          if (retryCount < 3) {
+            setError(`${errorMessage}\n\n將在 5 秒後自動重試...`);
+            setRetryCount(retryCount + 1);
+            
+            // 等待 5 秒後自動重試
+            setTimeout(() => {
+              handleTranslate(true);
+            }, 5000);
+            setIsLoading(false);
+            return;
+          } else {
+            setError(`${errorMessage}\n\n已達到最大重試次數，請稍後再試`);
+            setRetryCount(0);
+          }
+        } else {
+          throw new Error(errorMessage);
+        }
+      } else {
+        // 成功時重置重試計數
+        setRetryCount(0);
+        const data = await response.json();
+        setTranslatedText(data.translatedText || '');
       }
-
-      const data = await response.json();
-      setTranslatedText(data.translatedText || '');
     } catch (error: any) {
       console.error('翻譯錯誤:', error);
-      setError(error.message || '翻譯時發生錯誤');
+      const errorMessage = error.message || '翻譯時發生錯誤';
+      
+      // 如果是速率限制錯誤，提供重試選項
+      if (errorMessage.includes('請求次數過多') || errorMessage.includes('429')) {
+        if (retryCount < 3) {
+          setError(`${errorMessage}\n\n將在 5 秒後自動重試...`);
+          setRetryCount(retryCount + 1);
+          
+          // 等待 5 秒後自動重試
+          setTimeout(() => {
+            handleTranslate(true);
+          }, 5000);
+        } else {
+          setError(`${errorMessage}\n\n已達到最大重試次數，請稍後再試`);
+          setRetryCount(0);
+        }
+      } else {
+        setError(errorMessage);
+        setRetryCount(0);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -129,6 +185,8 @@ export default function CameraTranslateModal({ isOpen, onClose }: CameraTranslat
     setImage(null);
     setTranslatedText('');
     setError('');
+    setRetryCount(0);
+    setLastRequestTime(0);
     onClose();
   };
 
@@ -212,14 +270,14 @@ export default function CameraTranslateModal({ isOpen, onClose }: CameraTranslat
               <img src={image} alt="待翻譯圖片" className="w-full border-4 border-black" />
               <div className="flex gap-2">
                 <button
-                  onClick={handleTranslate}
+                  onClick={() => handleTranslate(false)}
                   disabled={isLoading}
                   className="pixel-button flex-1 py-3 text-sm disabled:opacity-50"
                 >
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 inline mr-2 animate-spin" />
-                      翻譯中...
+                      {retryCount > 0 ? `重試中 (${retryCount}/3)...` : '翻譯中...'}
                     </>
                   ) : (
                     '翻譯'
@@ -230,6 +288,8 @@ export default function CameraTranslateModal({ isOpen, onClose }: CameraTranslat
                     setImage(null);
                     setTranslatedText('');
                     setError('');
+                    setRetryCount(0);
+                    setLastRequestTime(0);
                   }}
                   className="pixel-button px-4 py-3 text-sm"
                 >

@@ -91,20 +91,32 @@ export async function POST(request: NextRequest) {
     console.error('翻譯圖片錯誤:', error);
     
     let errorMessage = '翻譯時發生錯誤';
+    let statusCode = 500;
     
-    if (error.message?.includes('API key not valid')) {
+    // 檢查錯誤類型
+    const errorStr = error.message || error.toString() || '';
+    const statusCodeMatch = errorStr.match(/\[(\d+)\]/);
+    const httpStatus = statusCodeMatch ? parseInt(statusCodeMatch[1]) : null;
+    
+    if (error.message?.includes('API key not valid') || error.message?.includes('401')) {
       errorMessage = 'API Key 無效，請檢查您的 Gemini API Key 是否正確';
-    } else if (error.message?.includes('429')) {
-      errorMessage = 'API 請求次數過多，請稍後再試';
-    } else if (error.message?.includes('quota')) {
+      statusCode = 401;
+    } else if (error.message?.includes('429') || httpStatus === 429 || error.message?.includes('rate limit') || error.message?.includes('quota exceeded')) {
+      errorMessage = 'API 請求次數過多，請稍後再試（建議等待 10-30 秒）';
+      statusCode = 429;
+    } else if (error.message?.includes('quota') || error.message?.includes('exceeded')) {
       errorMessage = 'API 配額已用完，請檢查您的 Gemini API 配額';
+      statusCode = 403;
+    } else if (error.message?.includes('403')) {
+      errorMessage = 'API 請求被拒絕，請檢查您的 API Key 權限';
+      statusCode = 403;
     } else if (error.message) {
       errorMessage = error.message;
     }
 
     return NextResponse.json(
       { error: errorMessage },
-      { status: 500 }
+      { status: statusCode }
     );
   }
 }
