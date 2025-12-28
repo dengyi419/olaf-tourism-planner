@@ -423,12 +423,36 @@ export default function PlanPage() {
               </div>
             </div>
 
+            {/* 天數選擇器 */}
+            {hasItinerary && itinerary.length > 1 && (
+              <div className="pixel-card p-4 mb-4">
+                <div className="flex gap-2 flex-wrap">
+                  {itinerary.map((day) => (
+                    <button
+                      key={day.dayId}
+                      onClick={() => {
+                        const element = document.getElementById(`day-${day.dayId}`);
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }}
+                      className="pixel-button px-4 py-2 text-sm"
+                    >
+                      第 {day.dayId} 天
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-6">
                 {hasItinerary ? (
                   <>
                     {itinerary.map((day) => (
-                      <DaySection key={day.dayId} day={day} />
+                      <div key={day.dayId} id={`day-${day.dayId}`}>
+                        <DaySection day={day} />
+                      </div>
                     ))}
                     <button
                       onClick={handleAddDay}
