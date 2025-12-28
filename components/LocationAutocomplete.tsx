@@ -96,7 +96,7 @@ export default function LocationAutocomplete({
           setIsLoading(false);
           if (status === 'OK' && predictions) {
             // 只取前5筆
-            setSuggestions(predictions.slice(0, 5).map(p => ({
+            setSuggestions(predictions.slice(0, 5).map((p: any) => ({
               description: p.description,
               place_id: p.place_id,
             })));
