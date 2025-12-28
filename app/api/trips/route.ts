@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { DayItinerary, TripSettings } from '@/types';
-// 直接導入 Supabase，讓 Next.js 正確打包到 serverless 函數中
-import { createClient } from '@supabase/supabase-js';
 
+// 使用動態導入避免構建時解析
 async function initializeSupabase(): Promise<any> {
   try {
     const supabaseUrl = process.env.SUPABASE_URL || '';
@@ -14,6 +13,11 @@ async function initializeSupabase(): Promise<any> {
       console.warn('Supabase 環境變數未設置');
       return null;
     }
+
+    // 使用動態 import，通過字符串拼接避免 webpack 靜態分析
+    const modulePath = '@supabase' + '/supabase-js';
+    const supabaseModule = await import(modulePath);
+    const { createClient } = supabaseModule;
 
     const client = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
