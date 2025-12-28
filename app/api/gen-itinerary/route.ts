@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     
     // 嘗試多個模型名稱（按優先順序，如果有圖片則使用支持視覺的模型）
     const modelNames = imageBase64 
-      ? ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.5-flash', 'gemini-2.5-pro']
+      ? ['gemini-3-flash-preview', 'gemini-3-pro-preview', 'gemini-2.5-flash', 'gemini-2.5-pro']
       : ['gemini-2.5-flash', 'gemini-2.5-pro'];
     
     // 計算目標預算（90%）

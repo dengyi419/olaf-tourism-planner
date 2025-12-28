@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import Script from 'next/script'
 import GoogleMapsLoader from '@/components/GoogleMapsLoader'
+import AuthProvider from '@/components/AuthProvider'
 
 export const metadata: Metadata = {
   title: 'Olaf tourism planner - AI 智能旅遊規劃',
@@ -28,9 +29,11 @@ export default function RootLayout({
         )}
       </head>
       <body>
-        {/* 客戶端：檢查並載入使用者設定的 API key */}
-        <GoogleMapsLoader />
-        {children}
+        <AuthProvider>
+          {/* 客戶端：檢查並載入使用者設定的 API key */}
+          <GoogleMapsLoader />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   )

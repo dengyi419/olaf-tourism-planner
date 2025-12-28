@@ -1,20 +1,50 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useEffect } from 'react';
 import Clock from './Clock';
 import TripList from './TripList';
 import LanguageSelector from './LanguageSelector';
+import UserMenu from './UserMenu';
 import { Settings } from 'lucide-react';
 import { useLanguageStore, t } from '@/store/useLanguageStore';
+import { useStorageStore } from '@/store/useStorageStore';
 
 export default function MainMenu() {
   const router = useRouter();
+  const { data: session, status } = useSession();
+  const { syncFromServer } = useStorageStore();
+
+  useEffect(() => {
+    // 如果已登入，從服務器同步行程
+    if (status === 'authenticated') {
+      syncFromServer();
+    }
+  }, [status, syncFromServer]);
+
+  // 如果未登入，重定向到登入頁面
+  if (status === 'unauthenticated') {
+    router.push('/auth/signin');
+    return null;
+  }
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-[#f5f5dc] flex items-center justify-center">
+        <div className="pixel-card p-4">
+          <p className="text-xs">載入中...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f5f5dc]">
-      {/* 右上角時鐘和語言選擇器 */}
+      {/* 右上角時鐘、語言選擇器和用戶菜單 */}
       <div className="absolute top-4 right-4 z-10 flex gap-2">
         <LanguageSelector />
+        <UserMenu />
         <Clock />
       </div>
 

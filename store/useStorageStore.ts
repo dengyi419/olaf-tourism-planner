@@ -14,13 +14,15 @@ interface SavedTrip {
 interface StorageState {
   currentTrip: SavedTrip | null;
   savedTrips: SavedTrip[];
+  isSyncing: boolean;
   
   // Actions
-  saveCurrentTrip: (name?: string, settings?: TripSettings, itinerary?: DayItinerary[]) => void;
+  saveCurrentTrip: (name?: string, settings?: TripSettings, itinerary?: DayItinerary[]) => Promise<void>;
   loadTrip: (id: string) => void;
-  deleteTrip: (id: string) => void;
-  updateCurrentTrip: (settings: TripSettings, itinerary: DayItinerary[]) => void;
+  deleteTrip: (id: string) => Promise<void>;
+  updateCurrentTrip: (settings: TripSettings, itinerary: DayItinerary[]) => Promise<void>;
   clearCurrentTrip: () => void;
+  syncFromServer: () => Promise<void>;
 }
 
 export const useStorageStore = create<StorageState>()(
@@ -28,8 +30,9 @@ export const useStorageStore = create<StorageState>()(
     (set, get) => ({
       currentTrip: null,
       savedTrips: [],
+      isSyncing: false,
 
-      saveCurrentTrip: (name, settings?, itinerary?) => {
+      saveCurrentTrip: async (name, settings?, itinerary?) => {
         const state = get();
         const tripName = name || `行程 ${new Date().toLocaleDateString('zh-TW')}`;
         const now = new Date().toISOString();
@@ -46,6 +49,7 @@ export const useStorageStore = create<StorageState>()(
           updatedAt: now,
         };
 
+        // 先更新本地狀態
         set((state) => {
           const existingIndex = state.savedTrips.findIndex(t => t.id === newTrip.id);
           let updatedTrips = [...state.savedTrips];
@@ -61,6 +65,20 @@ export const useStorageStore = create<StorageState>()(
             savedTrips: updatedTrips,
           };
         });
+
+        // 同步到後端
+        try {
+          const response = await fetch('/api/trips', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newTrip),
+          });
+          if (!response.ok) {
+            console.error('Failed to sync trip to server');
+          }
+        } catch (error) {
+          console.error('Error syncing trip:', error);
+        }
       },
 
       loadTrip: (id) => {
@@ -71,27 +89,68 @@ export const useStorageStore = create<StorageState>()(
         }
       },
 
-      deleteTrip: (id) => {
+      deleteTrip: async (id) => {
+        // 先更新本地狀態
         set((state) => ({
           savedTrips: state.savedTrips.filter(t => t.id !== id),
           currentTrip: state.currentTrip?.id === id ? null : state.currentTrip,
         }));
+
+        // 同步到後端
+        try {
+          const response = await fetch(`/api/trips?id=${id}`, {
+            method: 'DELETE',
+          });
+          if (!response.ok) {
+            console.error('Failed to delete trip from server');
+          }
+        } catch (error) {
+          console.error('Error deleting trip:', error);
+        }
       },
 
-      updateCurrentTrip: (settings, itinerary) => {
-        set((state) => {
-          if (state.currentTrip) {
-            return {
-              currentTrip: {
-                ...state.currentTrip,
-                settings,
-                itinerary,
-                updatedAt: new Date().toISOString(),
-              },
-            };
+      updateCurrentTrip: async (settings, itinerary) => {
+        const state = get();
+        if (state.currentTrip) {
+          const updatedTrip = {
+            ...state.currentTrip,
+            settings,
+            itinerary,
+            updatedAt: new Date().toISOString(),
+          };
+
+          // 更新本地狀態
+          set({ currentTrip: updatedTrip });
+
+          // 同步到後端
+          try {
+            const response = await fetch('/api/trips', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updatedTrip),
+            });
+            if (!response.ok) {
+              console.error('Failed to sync trip update to server');
+            }
+          } catch (error) {
+            console.error('Error syncing trip update:', error);
           }
-          return state;
-        });
+        }
+      },
+
+      syncFromServer: async () => {
+        set({ isSyncing: true });
+        try {
+          const response = await fetch('/api/trips');
+          if (response.ok) {
+            const data = await response.json();
+            set({ savedTrips: data.trips || [] });
+          }
+        } catch (error) {
+          console.error('Error syncing from server:', error);
+        } finally {
+          set({ isSyncing: false });
+        }
       },
 
       clearCurrentTrip: () => {
