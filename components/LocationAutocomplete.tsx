@@ -1,7 +1,5 @@
 'use client';
 
-/// <reference path="../types/google-maps.d.ts" />
-
 import { useEffect, useRef, useState } from 'react';
 import { MapPin } from 'lucide-react';
 
