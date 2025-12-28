@@ -19,6 +19,11 @@ export default function AIPlanPage() {
   const [preferences, setPreferences] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // 檢查是否有 API key
+  const hasApiKey = typeof window !== 'undefined' 
+    ? !!(localStorage.getItem('user_gemini_api_key') || '').trim()
+    : false;
 
   const handleGenerate = async () => {
     if (!destination.trim()) {
@@ -26,15 +31,20 @@ export default function AIPlanPage() {
       return;
     }
 
+    // 檢查是否有 API key
+    const userApiKey = typeof window !== 'undefined' 
+      ? localStorage.getItem('user_gemini_api_key') || ''
+      : '';
+
+    if (!userApiKey || userApiKey.trim() === '') {
+      setError('請先前往「API 金鑰設定」頁面設定您的 Gemini API Key。\n\n點擊右上角「主選單」→「API 金鑰設定」');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
     try {
-      // 從 localStorage 讀取使用者設定的 API key
-      const userApiKey = typeof window !== 'undefined' 
-        ? localStorage.getItem('user_gemini_api_key') || ''
-        : '';
-
       const response = await fetch('/api/gen-itinerary', {
         method: 'POST',
         headers: {
@@ -111,6 +121,19 @@ export default function AIPlanPage() {
             <h1 className="text-xl">AI 推薦行程</h1>
           </div>
 
+          {!hasApiKey && (
+            <div className="pixel-card p-4 mb-4 bg-yellow-100 border-yellow-500 text-xs">
+              <p className="font-bold mb-2">⚠️ 尚未設定 API 金鑰</p>
+              <p className="mb-2">使用 AI 推薦功能前，請先前往「API 金鑰設定」頁面設定您的 Gemini API Key。</p>
+              <button
+                onClick={() => router.push('/settings')}
+                className="pixel-button px-3 py-2 text-xs mt-2"
+              >
+                前往設定 API 金鑰
+              </button>
+            </div>
+          )}
+
           {error && (
             <div className="pixel-card p-3 mb-4 bg-red-100 border-red-500 text-red-700 text-xs whitespace-pre-line">
               {error}
@@ -183,7 +206,7 @@ export default function AIPlanPage() {
 
             <button
               onClick={handleGenerate}
-              disabled={isLoading}
+              disabled={isLoading || !hasApiKey}
               className="pixel-button w-full py-4 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (

@@ -48,18 +48,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 優先使用使用者提供的 API key，否則使用環境變數
-    const apiKey = userApiKey || process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+    // 只使用使用者提供的 API key，不使用環境變數作為 fallback
+    if (!userApiKey || userApiKey.trim() === '') {
       return NextResponse.json(
         { 
           error: 'GEMINI_API_KEY 未設定',
-          details: '請在設定頁面輸入您的 Gemini API Key，或在 .env.local 檔案中設定 GEMINI_API_KEY。您可以在 https://makersuite.google.com/app/apikey 取得新的 API 金鑰。',
+          details: '請在設定頁面輸入您的 Gemini API Key。您可以在 https://makersuite.google.com/app/apikey 取得新的 API 金鑰。',
           errorCode: 'API_KEY_NOT_SET'
         },
         { status: 500 }
       );
     }
+
+    const apiKey = userApiKey;
 
     // 檢查 API 金鑰格式（Gemini API 金鑰通常以 AIza 開頭）
     if (!apiKey.startsWith('AIza')) {

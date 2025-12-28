@@ -138,8 +138,8 @@ export default function ApiKeySettings() {
 
         <div className="text-[10px] opacity-70 space-y-1">
           <p>• API 金鑰僅儲存在您的瀏覽器中，不會上傳到伺服器</p>
-          <p>• 如果未設定，將使用伺服器預設的 API 金鑰（如果有的話）</p>
-          <p>• 建議使用自己的 API 金鑰以獲得更好的使用體驗</p>
+          <p>• 使用 AI 推薦功能前，必須先設定 Gemini API Key</p>
+          <p>• 使用地圖和地點自動完成功能前，必須先設定 Google Maps API Key</p>
         </div>
       </div>
     </div>
