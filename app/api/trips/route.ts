@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { DayItinerary, TripSettings } from '@/types';
-import { supabase } from '@/lib/supabase';
+import { initializeSupabase } from '@/lib/supabase';
 
 // 後備內存數據庫（如果 Supabase 未配置）
 const tripsDatabase = new Map<string, Array<{
@@ -25,6 +25,9 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // 初始化 Supabase（如果尚未初始化）
+    const supabase = await initializeSupabase();
 
     // 如果 Supabase 已配置，使用 Supabase
     if (supabase) {
@@ -96,6 +99,9 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
     const tripId = id || `trip-${Date.now()}`;
     const tripName = name || `行程 ${new Date().toLocaleDateString('zh-TW')}`;
+
+    // 初始化 Supabase（如果尚未初始化）
+    const supabase = await initializeSupabase();
 
     // 如果 Supabase 已配置，使用 Supabase
     if (supabase) {
@@ -240,6 +246,9 @@ export async function DELETE(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // 初始化 Supabase（如果尚未初始化）
+    const supabase = await initializeSupabase();
 
     // 如果 Supabase 已配置，使用 Supabase
     if (supabase) {
