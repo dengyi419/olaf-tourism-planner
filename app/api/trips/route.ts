@@ -150,7 +150,14 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date().toISOString();
-    let tripId = id || `trip-${Date.now()}`;
+    // 生成唯一 ID：使用時間戳 + 隨機字符串 + 用戶 email 前綴
+    const generateUniqueId = (userEmail: string) => {
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(2, 9);
+      const userPrefix = userEmail.split('@')[0].substring(0, 4);
+      return `trip-${timestamp}-${randomStr}-${userPrefix}`;
+    };
+    let tripId = id || generateUniqueId(session.user.email);
     const tripName = name || `行程 ${new Date().toLocaleDateString('zh-TW')}`;
 
     // 初始化 Supabase（如果尚未初始化）
