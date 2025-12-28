@@ -73,7 +73,8 @@ export const useStorageStore = create<StorageState>()(
           name: tripName,
           settings: tripSettings,
           itinerary: tripItinerary,
-          createdAt: state.currentTrip?.createdAt || now,
+          // 如果是強制創建新 ID，不設置 createdAt，讓後端知道這是新行程
+          createdAt: forceNewId ? now : (state.currentTrip?.createdAt || now),
           updatedAt: now,
         };
 

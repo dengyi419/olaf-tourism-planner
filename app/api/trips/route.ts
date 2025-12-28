@@ -161,10 +161,21 @@ export async function POST(request: NextRequest) {
     
     // 決定是否要強制創建新行程
     // 如果 forceCreate 為 true，或者沒有 createdAt（表示是新行程），強制創建新記錄
-    const shouldForceCreate = forceCreate || !createdAt;
+    const shouldForceCreate = forceCreate === true || !createdAt;
+    
+    console.log('後端接收到的參數:', {
+      id,
+      forceCreate,
+      createdAt,
+      shouldForceCreate,
+      hasId: !!id,
+      hasCreatedAt: !!createdAt,
+    });
     
     // 如果強制創建，生成新 ID，忽略前端傳來的 ID
     let tripId = shouldForceCreate ? generateUniqueId(session.user.email) : (id || generateUniqueId(session.user.email));
+    
+    console.log('生成的行程ID:', tripId, 'shouldForceCreate:', shouldForceCreate);
 
     // 初始化 Supabase（如果尚未初始化）
     const supabase = await initializeSupabase();
