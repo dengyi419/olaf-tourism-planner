@@ -219,6 +219,7 @@ export const useStorageStore = create<StorageState>()(
           itinerary,
           createdAt: state.currentTrip?.createdAt || now,
           updatedAt: now,
+          user_email: state.currentTrip?.user_email, // 保留 user_email
         };
 
         // 更新本地狀態（但不自動保存到後端，需要用戶手動點擊「儲存」）

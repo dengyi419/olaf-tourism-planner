@@ -18,10 +18,12 @@ export default function PlanPage() {
   const [showTripSelection, setShowTripSelection] = useState(false);
   
   // 初始設定表單狀態
+  const [tripName, setTripName] = useState('');
   const [destination, setDestination] = useState('');
   const [budget, setBudget] = useState(50000);
   const [currency, setCurrency] = useState('TWD');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isEditingName, setIsEditingName] = useState(false);
   
   // AI 規劃相關狀態
   const [showAIPanel, setShowAIPanel] = useState(false);
@@ -84,7 +86,8 @@ export default function PlanPage() {
 
   const handleSave = () => {
     if (tripSettings && itinerary.length > 0) {
-      saveCurrentTrip(undefined, tripSettings, itinerary);
+      const name = tripName.trim() || `行程 ${new Date().toLocaleDateString('zh-TW')}`;
+      saveCurrentTrip(name, tripSettings, itinerary);
       alert('行程已儲存！');
     }
   };

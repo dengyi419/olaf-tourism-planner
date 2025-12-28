@@ -12,6 +12,7 @@ export default function AIPlanPage() {
   const { setItinerary, setTripSettings } = useTravelStore();
   const { updateCurrentTrip } = useStorageStore();
   
+  const [tripName, setTripName] = useState('');
   const [destination, setDestination] = useState('');
   const [days, setDays] = useState(3);
   const [budget, setBudget] = useState(50000);
