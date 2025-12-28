@@ -59,7 +59,8 @@ export const useStorageStore = create<StorageState>()(
             // 如果已經保存過，使用原 ID（更新）
             tripId = state.currentTrip.id;
           } else {
-            // 如果還沒保存過，生成新 ID（創建新記錄）
+            // 如果還沒保存過，但 currentTrip 有 ID，這可能是從其他地方加載的
+            // 為了安全起見，生成新 ID（創建新記錄），避免覆蓋資料庫中的舊行程
             tripId = generateUniqueId();
           }
         } else {

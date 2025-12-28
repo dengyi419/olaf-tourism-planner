@@ -126,6 +126,12 @@ export default function AIPlanPage() {
       }));
 
       setItinerary(itineraryWithDates);
+      
+      // 清除當前行程，確保生成新 ID（避免覆蓋舊行程）
+      const { clearCurrentTrip } = useStorageStore.getState();
+      clearCurrentTrip();
+      
+      // 更新當前行程（會生成新 ID）
       updateCurrentTrip(settings, itineraryWithDates);
       
       // 跳轉到規劃頁面
