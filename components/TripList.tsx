@@ -20,12 +20,17 @@ interface TripSummary {
 }
 
 export default function TripList() {
-  const { savedTrips, currentTrip } = useStorageStore();
+  const { savedTrips, currentTrip, syncFromServer } = useStorageStore();
   const { tripSettings, itinerary, getTotalSpent } = useTravelStore();
   const [tripSummaries, setTripSummaries] = useState<TripSummary[]>([]);
   const [totalAllSpent, setTotalAllSpent] = useState(0);
   const [totalAllDistance, setTotalAllDistance] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+
+  // 首次載入時從服務器同步
+  useEffect(() => {
+    syncFromServer();
+  }, [syncFromServer]);
 
   useEffect(() => {
     const loadTripData = async () => {
