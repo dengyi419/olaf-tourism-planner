@@ -81,8 +81,18 @@ export default function PlanPage() {
     }
   };
 
-  const handleCreateNewTrip = () => {
-    // 清除當前行程狀態
+  const handleCreateNewTrip = async () => {
+    // 如果有當前行程且未保存，先自動保存
+    if (tripSettings && itinerary.length > 0) {
+      try {
+        await saveCurrentTrip(undefined, tripSettings, itinerary);
+        console.log('已自動保存舊行程');
+      } catch (error) {
+        console.error('自動保存舊行程失敗:', error);
+      }
+    }
+    
+    // 清除當前行程狀態（但保留已保存的行程列表）
     clearCurrentTrip();
     setItinerary([]);
     setTripSettings(null);

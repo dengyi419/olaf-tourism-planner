@@ -90,7 +90,12 @@ export const useStorageStore = create<StorageState>()(
 
       loadTrip: (id) => {
         const state = get();
-        const trip = state.savedTrips.find(t => t.id === id);
+        // 先從 savedTrips 中查找
+        let trip = state.savedTrips.find(t => t.id === id);
+        // 如果找不到，可能是當前行程
+        if (!trip && state.currentTrip?.id === id) {
+          trip = state.currentTrip;
+        }
         if (trip) {
           set({ currentTrip: trip });
         }
@@ -151,7 +156,20 @@ export const useStorageStore = create<StorageState>()(
           const response = await fetch('/api/trips');
           if (response.ok) {
             const data = await response.json();
-            set({ savedTrips: data.trips || [] });
+            const serverTrips = data.trips || [];
+            const state = get();
+            
+            // 合併服務器行程和本地行程，避免丟失本地未同步的行程
+            const mergedTrips = [...serverTrips];
+            state.savedTrips.forEach(localTrip => {
+              const exists = mergedTrips.find(t => t.id === localTrip.id);
+              if (!exists) {
+                // 如果本地有但服務器沒有，保留本地版本
+                mergedTrips.push(localTrip);
+              }
+            });
+            
+            set({ savedTrips: mergedTrips });
           }
         } catch (error) {
           console.error('Error syncing from server:', error);
