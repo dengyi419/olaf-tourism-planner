@@ -74,7 +74,7 @@ export default function RouteMap({ activities, dayId }: RouteMapProps) {
           
           // 調整地圖視野以包含所有路線
           const bounds = new google.maps.LatLngBounds();
-          result.routes[0]?.legs.forEach(leg => {
+          result.routes[0]?.legs.forEach((leg: any) => {
             bounds.extend(leg.start_location);
             bounds.extend(leg.end_location);
           });
