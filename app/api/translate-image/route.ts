@@ -43,31 +43,39 @@ export async function POST(request: NextRequest) {
         const genAI = new GoogleGenerativeAI(userApiKey);
         const model = genAI.getGenerativeModel({ model: modelName });
 
-        const prompt = `You are a professional translator. Please identify all text in this image and translate it to ${targetLanguage}.
+        // 構建更精確的 prompt
+        const prompt = `Translate all text in this image to ${targetLanguage}.
 
-Requirements:
-1. Identify ALL text in the image (including signs, menus, road signs, labels, etc.)
-2. Translate ALL text to ${targetLanguage}
-3. Maintain the original format and layout as much as possible
-4. If there are multiple lines or sections, display them on separate lines
-5. ONLY return the translated text, do NOT add any explanations, notes, or additional text
-6. If the image contains no text, reply with: "圖片中沒有可識別的文字" (if target language is Chinese) or "No text found in image" (if target language is English)
+CRITICAL INSTRUCTIONS:
+1. Identify EVERY piece of text visible in the image (signs, menus, labels, captions, numbers, etc.)
+2. Translate ALL identified text to ${targetLanguage}
+3. Preserve the original structure (line breaks, sections, etc.)
+4. Return ONLY the translated text - NO explanations, NO notes, NO additional commentary
+5. If no text is found, return exactly: "圖片中沒有可識別的文字" (for Chinese) or "No text found in image" (for other languages)
 
-Important: 
-- Translate every single word, character, and number you see
-- Do not skip any text
-- Do not add your own comments
-- Return ONLY the translated content`;
+DO NOT:
+- Add explanations or notes
+- Skip any text
+- Add your own comments
+- Include source language text
 
-        const result = await model.generateContent([
-          prompt,
-          {
-            inlineData: {
-              data: imageBase64,
-              mimeType: 'image/jpeg',
-            },
-          },
-        ]);
+ONLY return the translated content.`;
+
+        // 使用正確的 Gemini API 格式
+        const result = await model.generateContent({
+          contents: [{
+            role: 'user',
+            parts: [
+              { text: prompt },
+              {
+                inlineData: {
+                  data: imageBase64,
+                  mimeType: 'image/jpeg',
+                },
+              },
+            ],
+          }],
+        });
 
         const response = result.response;
         const translatedText = response.text();
