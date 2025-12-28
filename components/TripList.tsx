@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useStorageStore } from '@/store/useStorageStore';
 import { useTravelStore } from '@/store/useTravelStore';
 import { calculateTripDistance } from '@/utils/calculateDistance';
@@ -20,12 +21,30 @@ interface TripSummary {
 }
 
 export default function TripList() {
-  const { savedTrips, currentTrip, syncFromServer } = useStorageStore();
-  const { tripSettings, itinerary, getTotalSpent } = useTravelStore();
+  const router = useRouter();
+  const { savedTrips, currentTrip, syncFromServer, loadTrip } = useStorageStore();
+  const { tripSettings, itinerary, getTotalSpent, setTripSettings, setItinerary } = useTravelStore();
   const [tripSummaries, setTripSummaries] = useState<TripSummary[]>([]);
   const [totalAllSpent, setTotalAllSpent] = useState(0);
   const [totalAllDistance, setTotalAllDistance] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+
+  const handleTripClick = (tripId: string) => {
+    if (tripId === 'current') {
+      // 如果點擊當前行程，直接跳轉到規劃頁面
+      router.push('/plan');
+      return;
+    }
+    
+    // 載入選中的行程
+    loadTrip(tripId);
+    const trip = savedTrips.find(t => t.id === tripId);
+    if (trip) {
+      setTripSettings(trip.settings);
+      setItinerary(trip.itinerary);
+      router.push('/plan');
+    }
+  };
 
   // 首次載入時從服務器同步
   useEffect(() => {
@@ -160,7 +179,8 @@ export default function TripList() {
             {tripSummaries.map((trip) => (
               <div
                 key={trip.id}
-                className={`pixel-card p-3 border-2 ${
+                onClick={() => handleTripClick(trip.id)}
+                className={`pixel-card p-3 border-2 cursor-pointer hover:bg-gray-100 transition-colors ${
                   trip.isCurrent ? 'border-yellow-500 bg-yellow-50' : 'border-black'
                 }`}
               >

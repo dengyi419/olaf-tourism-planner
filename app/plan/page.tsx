@@ -82,6 +82,7 @@ export default function PlanPage() {
   };
 
   const handleCreateNewTrip = () => {
+    // 清除當前行程狀態
     clearCurrentTrip();
     setItinerary([]);
     setTripSettings(null);
@@ -90,6 +91,8 @@ export default function PlanPage() {
     setDestination('');
     setBudget(50000);
     setCurrency('TWD');
+    // 確保可以重新創建行程
+    setShowTripSelection(false);
   };
 
   const handleClearCurrentTrip = () => {
