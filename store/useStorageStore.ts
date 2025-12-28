@@ -69,6 +69,18 @@ export const useStorageStore = create<StorageState>()(
           tripId = generateUniqueId();
         }
         
+        // 獲取當前用戶 email（如果可用）
+        let userEmail: string | undefined;
+        if (typeof window !== 'undefined') {
+          try {
+            const sessionResponse = await fetch('/api/auth/session');
+            const session = await sessionResponse.json();
+            userEmail = session?.user?.email;
+          } catch (error) {
+            console.warn('無法獲取用戶 email:', error);
+          }
+        }
+        
         const newTrip: SavedTrip = {
           id: tripId,
           name: tripName,
@@ -77,6 +89,7 @@ export const useStorageStore = create<StorageState>()(
           // 如果是強制創建新 ID，不設置 createdAt，讓後端知道這是新行程
           createdAt: forceNewId ? now : (state.currentTrip?.createdAt || now),
           updatedAt: now,
+          user_email: userEmail, // 包含 user_email 以便驗證
         };
 
         // 先更新本地狀態

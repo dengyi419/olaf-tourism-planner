@@ -303,6 +303,7 @@ export async function POST(request: NextRequest) {
           itinerary: data.itinerary,
           createdAt: data.created_at,
           updatedAt: data.updated_at,
+          user_email: data.user_email, // 包含 user_email 以便前端驗證
         };
 
         return NextResponse.json({ trip, success: true });
@@ -332,6 +333,7 @@ export async function POST(request: NextRequest) {
           itinerary: data.itinerary,
           createdAt: data.created_at,
           updatedAt: data.updated_at,
+          user_email: data.user_email, // 包含 user_email 以便前端驗證
         };
 
         return NextResponse.json({ trip, success: true });
@@ -349,6 +351,7 @@ export async function POST(request: NextRequest) {
       itinerary,
       createdAt: id ? userTrips.find(t => t.id === id)?.createdAt || now : now,
       updatedAt: now,
+      user_email: session.user.email, // 包含 user_email 以便前端驗證
     };
 
     const existingIndex = userTrips.findIndex(t => t.id === trip.id);
