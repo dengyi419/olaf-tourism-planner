@@ -3,7 +3,10 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { DayItinerary, TripSettings } from '@/types';
 
-// 動態初始化 Supabase（避免構建時解析）
+// 動態初始化 Supabase
+// 使用 try-catch 包裹 import 來避免構建時錯誤
+let supabaseModule: any = null;
+
 async function initializeSupabase(): Promise<any> {
   try {
     const supabaseUrl = process.env.SUPABASE_URL || '';
@@ -14,12 +17,19 @@ async function initializeSupabase(): Promise<any> {
       return null;
     }
 
-    // 使用動態 import，但通過字符串拼接避免 webpack 靜態分析
-    // 這樣 webpack 無法在構建時解析模組路徑
-    const moduleName = '@supabase' + '/supabase-js';
-    const supabaseModule = await import(moduleName);
-    const { createClient } = supabaseModule;
+    // 嘗試載入模組（如果尚未載入）
+    if (!supabaseModule) {
+      try {
+        // 直接使用 import，Next.js 應該會正確打包它
+        supabaseModule = await import('@supabase/supabase-js');
+      } catch (importError: any) {
+        console.error('無法載入 @supabase/supabase-js 模組:', importError?.message || importError);
+        console.error('這可能是因為模組沒有被打包到 serverless 函數中');
+        return null;
+      }
+    }
 
+    const { createClient } = supabaseModule;
     const client = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
@@ -33,6 +43,9 @@ async function initializeSupabase(): Promise<any> {
     console.error('Supabase 初始化失敗:', error?.message || error);
     if (error?.code) {
       console.error('錯誤代碼:', error.code);
+    }
+    if (error?.stack) {
+      console.error('錯誤堆棧:', error.stack);
     }
     return null;
   }
