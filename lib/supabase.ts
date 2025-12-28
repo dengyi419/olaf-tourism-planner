@@ -1,9 +1,10 @@
 // 動態初始化 Supabase 客戶端（避免構建時解析）
-// 這個函數在運行時動態加載 @supabase/supabase-js
+// 使用 Function 構造函數來完全避免 webpack 在構建時解析模組
 export async function initializeSupabase() {
   try {
-    // 使用動態 import 在運行時加載模組（構建時不會解析）
-    const supabaseModule = await import('@supabase/supabase-js');
+    // 使用 Function 構造函數動態執行 import，完全避免構建時解析
+    const dynamicImport = new Function('specifier', 'return import(specifier)');
+    const supabaseModule = await dynamicImport('@supabase/supabase-js');
     const { createClient } = supabaseModule;
     
     const supabaseUrl = process.env.SUPABASE_URL || '';
