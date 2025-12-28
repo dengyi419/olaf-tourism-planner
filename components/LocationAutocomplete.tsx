@@ -1,5 +1,7 @@
 'use client';
 
+/// <reference path="../types/google-maps.d.ts" />
+
 import { useEffect, useRef, useState } from 'react';
 import { MapPin } from 'lucide-react';
 
@@ -28,8 +30,9 @@ export default function LocationAutocomplete({
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
-  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
+  // 使用 any 類型避免構建時類型錯誤（Google Maps API 在運行時動態載入）
+  const autocompleteServiceRef = useRef<any>(null);
+  const placesServiceRef = useRef<any>(null);
 
   // 初始化 Google Places 服務
   useEffect(() => {
@@ -133,8 +136,8 @@ export default function LocationAutocomplete({
         placeId: suggestion.place_id,
         fields: ['name', 'formatted_address', 'geometry'],
       },
-      (place, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+      (place: any, status: string) => {
+        if (status === 'OK' && place) {
           const locationName = place.name || suggestion.description;
           const address = place.formatted_address || suggestion.description;
           const query = `${locationName} ${address}`;
