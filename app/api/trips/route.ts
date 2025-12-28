@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date().toISOString();
-    const tripId = id || `trip-${Date.now()}`;
+    let tripId = id || `trip-${Date.now()}`;
     const tripName = name || `行程 ${new Date().toLocaleDateString('zh-TW')}`;
 
     // 初始化 Supabase（如果尚未初始化）
