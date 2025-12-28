@@ -235,7 +235,7 @@ export default function PlanPage() {
       <BudgetHeader />
       
       {/* 右上角時鐘和按鈕 - 調整 z-index 和位置避免被狀態列擋住 */}
-      <div className="fixed top-20 right-4 flex gap-3 z-50">
+      <div className="fixed top-20 right-4 flex gap-3 z-50 flex-wrap justify-end max-w-[calc(100vw-2rem)]">
         <Clock />
         <button
           onClick={() => router.push('/')}
@@ -272,7 +272,7 @@ export default function PlanPage() {
         )}
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-4">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-32">
         {!hasSettings ? (
           <div className="max-w-2xl mx-auto">
             {showTripSelection ? (
