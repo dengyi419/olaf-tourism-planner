@@ -115,6 +115,7 @@ export default function AIPlanPage() {
         totalBudget: budget,
         destination,
         currency,
+        startDate,
       };
       setTripSettings(settings);
 
