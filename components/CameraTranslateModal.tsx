@@ -120,9 +120,18 @@ export default function CameraTranslateModal({ isOpen, onClose }: CameraTranslat
       if (!response.ok) {
         const errorData = await response.json();
         const errorMessage = errorData.error || '翻譯失敗';
+        const isQuotaError = errorData.isQuotaError || false;
         
-        // 如果是速率限制錯誤，提供重試選項
-        if (errorMessage.includes('請求次數過多') || errorMessage.includes('429') || response.status === 429) {
+        // 如果是配額錯誤（403），不重試，直接顯示錯誤
+        if (isQuotaError || response.status === 403 || errorMessage.includes('配額已用完') || errorMessage.includes('RPD')) {
+          setError(errorMessage);
+          setRetryCount(0);
+          setIsLoading(false);
+          return;
+        }
+        
+        // 如果是速率限制錯誤（429），提供重試選項
+        if (errorMessage.includes('請求次數過多') || errorMessage.includes('速率限制') || errorMessage.includes('429') || response.status === 429) {
           if (retryCount < 3) {
             setError(`${errorMessage}\n\n將在 5 秒後自動重試...`);
             setRetryCount(retryCount + 1);
@@ -150,8 +159,13 @@ export default function CameraTranslateModal({ isOpen, onClose }: CameraTranslat
       console.error('翻譯錯誤:', error);
       const errorMessage = error.message || '翻譯時發生錯誤';
       
+      // 如果是配額錯誤，不重試
+      if (errorMessage.includes('配額已用完') || errorMessage.includes('RPD') || errorMessage.includes('403')) {
+        setError(errorMessage);
+        setRetryCount(0);
+      }
       // 如果是速率限制錯誤，提供重試選項
-      if (errorMessage.includes('請求次數過多') || errorMessage.includes('429')) {
+      else if (errorMessage.includes('請求次數過多') || errorMessage.includes('速率限制') || errorMessage.includes('429')) {
         if (retryCount < 3) {
           setError(`${errorMessage}\n\n將在 5 秒後自動重試...`);
           setRetryCount(retryCount + 1);

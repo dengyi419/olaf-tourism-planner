@@ -92,30 +92,39 @@ export async function POST(request: NextRequest) {
     
     let errorMessage = '翻譯時發生錯誤';
     let statusCode = 500;
+    let isQuotaError = false;
     
     // 檢查錯誤類型
     const errorStr = error.message || error.toString() || '';
     const statusCodeMatch = errorStr.match(/\[(\d+)\]/);
     const httpStatus = statusCodeMatch ? parseInt(statusCodeMatch[1]) : null;
     
+    // 檢查是否是配額相關錯誤
+    const quotaKeywords = ['quota', 'exceeded', 'limit', 'RPD', 'requests per day', 'resource exhausted'];
+    const hasQuotaKeyword = quotaKeywords.some(keyword => 
+      errorStr.toLowerCase().includes(keyword.toLowerCase())
+    );
+    
     if (error.message?.includes('API key not valid') || error.message?.includes('401')) {
       errorMessage = 'API Key 無效，請檢查您的 Gemini API Key 是否正確';
       statusCode = 401;
-    } else if (error.message?.includes('429') || httpStatus === 429 || error.message?.includes('rate limit') || error.message?.includes('quota exceeded')) {
-      errorMessage = 'API 請求次數過多，請稍後再試（建議等待 10-30 秒）';
+    } else if (httpStatus === 429 || error.message?.includes('429') || error.message?.includes('rate limit')) {
+      errorMessage = 'API 請求次數過多（速率限制）\n\n建議：\n- 等待 10-30 秒後再試\n- 避免快速連續請求\n- 系統將自動重試';
       statusCode = 429;
-    } else if (error.message?.includes('quota') || error.message?.includes('exceeded')) {
-      errorMessage = 'API 配額已用完，請檢查您的 Gemini API 配額';
-      statusCode = 403;
-    } else if (error.message?.includes('403')) {
-      errorMessage = 'API 請求被拒絕，請檢查您的 API Key 權限';
+    } else if (httpStatus === 403 || hasQuotaKeyword || error.message?.includes('403') || error.message?.includes('quota') || error.message?.includes('exceeded') || error.message?.includes('RPD')) {
+      isQuotaError = true;
+      errorMessage = 'API 配額已用完（Peak requests per day 超過限制）\n\n解決方案：\n1. 等待 24 小時後配額重置\n2. 升級您的 Gemini API 配額\n3. 檢查配額使用情況：https://makersuite.google.com/app/apikey\n\n注意：免費配額通常每天有請求次數限制';
       statusCode = 403;
     } else if (error.message) {
       errorMessage = error.message;
     }
 
     return NextResponse.json(
-      { error: errorMessage },
+      { 
+        error: errorMessage,
+        isQuotaError,
+        statusCode 
+      },
       { status: statusCode }
     );
   }
