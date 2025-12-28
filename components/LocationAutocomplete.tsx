@@ -94,9 +94,9 @@ export default function LocationAutocomplete({
           types: ['establishment', 'geocode'],
           language: 'zh-TW',
         },
-        (predictions, status) => {
+        (predictions: any, status: string) => {
           setIsLoading(false);
-          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+          if (status === 'OK' && predictions) {
             // 只取前5筆
             setSuggestions(predictions.slice(0, 5).map(p => ({
               description: p.description,
