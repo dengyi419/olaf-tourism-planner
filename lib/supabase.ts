@@ -1,17 +1,7 @@
 // 動態初始化 Supabase 客戶端
 // 在服務器端使用 require，在客戶端使用動態 import
 let supabaseModule: any = null;
-
-// 嘗試在模組加載時預先載入（僅在服務器端）
-if (typeof window === 'undefined') {
-  try {
-    // 在 Node.js 環境中使用 require
-    supabaseModule = require('@supabase/supabase-js');
-  } catch (error) {
-    // 如果 require 失敗，將在運行時使用動態 import
-    console.warn('無法預先載入 Supabase 模組，將在運行時動態載入');
-  }
-}
+let loadAttempted = false;
 
 export async function initializeSupabase() {
   try {
@@ -20,8 +10,23 @@ export async function initializeSupabase() {
     // 如果已經載入，直接使用
     if (supabaseModule) {
       createClient = supabaseModule.createClient;
+    } else if (typeof window === 'undefined' && !loadAttempted) {
+      // 在服務器端（Node.js 環境）使用 require
+      try {
+        loadAttempted = true;
+        // 使用動態 require 避免構建時解析
+        const requireModule = eval('require');
+        supabaseModule = requireModule('@supabase/supabase-js');
+        createClient = supabaseModule.createClient;
+      } catch (requireError) {
+        // 如果 require 失敗，嘗試動態 import
+        console.warn('require 失敗，嘗試使用動態 import:', requireError);
+        const module = await import('@supabase/supabase-js');
+        createClient = module.createClient;
+        supabaseModule = module;
+      }
     } else {
-      // 否則使用動態 import（適用於客戶端或運行時）
+      // 在客戶端或 require 失敗時使用動態 import
       const module = await import('@supabase/supabase-js');
       createClient = module.createClient;
       supabaseModule = module; // 緩存模組
@@ -49,6 +54,9 @@ export async function initializeSupabase() {
   } catch (error: any) {
     console.error('Supabase 客戶端初始化失敗，將使用內存存儲:', error);
     console.error('錯誤詳情:', error?.message || error);
+    if (error?.stack) {
+      console.error('錯誤堆棧:', error.stack);
+    }
     return null;
   }
 }
