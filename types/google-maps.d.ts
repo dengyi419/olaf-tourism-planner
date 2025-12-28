@@ -8,6 +8,7 @@ declare namespace google {
     const DirectionsRenderer: any;
     const TravelMode: any;
     const Geocoder: any;
+    const Marker: any;
 
     class LatLngBounds {
       extend(...args: any[]): void;
@@ -77,6 +78,7 @@ interface Window {
       TravelMode?: any;
       Geocoder?: any;
       LatLngBounds?: any;
+      Marker?: any;
       places?: {
         AutocompleteService: new () => google.maps.places.AutocompleteService;
         PlacesService: new (container: HTMLElement) => google.maps.places.PlacesService;
