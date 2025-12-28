@@ -26,6 +26,24 @@ interface StorageState {
   syncFromServer: () => Promise<void>;
 }
 
+// 獲取用戶特定的 localStorage key
+const getStorageKey = (): string => {
+  if (typeof window === 'undefined') return 'travelgenie-storage';
+  
+  // 嘗試從 session 獲取用戶 email
+  try {
+    // 使用同步方式檢查 localStorage 中是否有存儲的用戶 email
+    const storedUserEmail = localStorage.getItem('current_user_email');
+    if (storedUserEmail) {
+      return `travelgenie-storage-${storedUserEmail}`;
+    }
+  } catch (error) {
+    console.warn('無法獲取用戶 email，使用默認 key:', error);
+  }
+  
+  return 'travelgenie-storage';
+};
+
 export const useStorageStore = create<StorageState>()(
   persist(
     (set, get) => ({
@@ -221,6 +239,31 @@ export const useStorageStore = create<StorageState>()(
           const userEmail = session.user.email;
           console.log('同步行程，用戶:', userEmail);
           
+          // 更新 localStorage 中的用戶 email（用於確定存儲 key）
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem('current_user_email', userEmail);
+            } catch (error) {
+              console.warn('無法保存用戶 email 到 localStorage:', error);
+            }
+          }
+          
+          // 立即清除不屬於當前用戶的本地數據
+          const state = get();
+          const filteredLocalTrips = state.savedTrips.filter((trip: any) => {
+            if (trip.user_email && trip.user_email !== userEmail) {
+              console.warn('清除不屬於當前用戶的本地行程:', trip.id, trip.user_email, '當前用戶:', userEmail);
+              return false;
+            }
+            return true;
+          });
+          
+          // 如果過濾後的數據不同，立即更新
+          if (filteredLocalTrips.length !== state.savedTrips.length) {
+            console.log('清除', state.savedTrips.length - filteredLocalTrips.length, '個不屬於當前用戶的行程');
+            set({ savedTrips: filteredLocalTrips });
+          }
+          
           const response = await fetch('/api/trips');
           if (response.ok) {
             const data = await response.json();
@@ -281,7 +324,35 @@ export const useStorageStore = create<StorageState>()(
       },
     }),
     {
-      name: 'travelgenie-storage',
+      name: getStorageKey(),
+      // 在恢復數據時進行過濾
+      partialize: (state) => ({
+        currentTrip: state.currentTrip,
+        savedTrips: state.savedTrips,
+      }),
+      // 在恢復數據後立即過濾
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        
+        // 嘗試獲取當前用戶 email
+        if (typeof window !== 'undefined') {
+          const storedUserEmail = localStorage.getItem('current_user_email');
+          if (storedUserEmail) {
+            // 過濾不屬於當前用戶的數據
+            const filteredTrips = state.savedTrips.filter((trip: any) => {
+              if (trip.user_email && trip.user_email !== storedUserEmail) {
+                console.warn('恢復時清除不屬於當前用戶的行程:', trip.id);
+                return false;
+              }
+              return true;
+            });
+            
+            if (filteredTrips.length !== state.savedTrips.length) {
+              state.savedTrips = filteredTrips;
+            }
+          }
+        }
+      },
     }
   )
 );

@@ -25,10 +25,27 @@ export default function MainMenu() {
 
   useEffect(() => {
     // 如果已登入，從服務器同步行程
-    if (status === 'authenticated') {
+    if (status === 'authenticated' && session?.user?.email) {
+      // 更新 localStorage 中的用戶 email
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('current_user_email', session.user.email);
+        } catch (error) {
+          console.warn('無法保存用戶 email:', error);
+        }
+      }
       syncFromServer();
+    } else if (status === 'unauthenticated') {
+      // 如果未登入，清除用戶 email
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem('current_user_email');
+        } catch (error) {
+          console.warn('無法清除用戶 email:', error);
+        }
+      }
     }
-  }, [status, syncFromServer]);
+  }, [status, session, syncFromServer]);
 
   // 檢查是否有當前行程，並且根據日期判斷是否為當前進行中的行程
   const checkIsCurrentTrip = () => {

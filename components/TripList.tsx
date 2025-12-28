@@ -114,16 +114,37 @@ export default function TripList() {
       }
 
       // 處理歷史行程（只處理屬於當前用戶的行程）
-      const userTrips = userEmail 
-        ? savedTrips.filter(trip => !trip.user_email || trip.user_email === userEmail)
-        : savedTrips; // 如果沒有 session，保留所有（但這不應該發生）
+      // 如果沒有用戶 email，不顯示任何行程（安全起見）
+      if (!userEmail) {
+        console.warn('沒有用戶 email，不顯示行程');
+        setTripSummaries([]);
+        setTotalAllSpent(0);
+        setTotalAllDistance(0);
+        setIsLoading(false);
+        return;
+      }
+      
+      // 嚴格過濾：只顯示屬於當前用戶的行程
+      const userTrips = savedTrips.filter(trip => {
+        // 如果行程有 user_email，必須匹配
+        if (trip.user_email) {
+          return trip.user_email === userEmail;
+        }
+        // 如果沒有 user_email（舊數據），跳過（安全起見）
+        console.warn('發現沒有 user_email 的行程，跳過:', trip.id);
+        return false;
+      });
       
       for (const trip of userTrips) {
         if (trip.id === currentTrip?.id) continue; // 跳過已在當前行程中的
         
-        // 額外驗證：確保行程屬於當前用戶
-        if (userEmail && trip.user_email && trip.user_email !== userEmail) {
-          console.warn('跳過不屬於當前用戶的行程:', trip.id, trip.user_email, '當前用戶:', userEmail);
+        // 再次驗證（雙重檢查）
+        if (trip.user_email !== userEmail) {
+          console.error('安全錯誤：行程 user_email 不匹配！', {
+            tripId: trip.id,
+            tripUserEmail: trip.user_email,
+            currentUserEmail: userEmail,
+          });
           continue;
         }
 
