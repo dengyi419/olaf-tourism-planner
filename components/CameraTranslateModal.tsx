@@ -97,7 +97,7 @@ export default function CameraTranslateModal({ isOpen, onClose }: CameraTranslat
         },
         body: JSON.stringify({
           imageBase64: base64Data,
-          targetLanguage: language === 'zh' ? '繁體中文' : language === 'en' ? 'English' : '繁體中文',
+          targetLanguage: language === 'zh-TW' || language === 'zh' ? '繁體中文' : language === 'en' ? 'English' : '繁體中文',
           userApiKey,
         }),
       });
