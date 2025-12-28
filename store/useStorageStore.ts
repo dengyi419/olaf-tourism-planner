@@ -9,6 +9,7 @@ interface SavedTrip {
   itinerary: DayItinerary[];
   createdAt: string;
   updatedAt: string;
+  user_email?: string; // 可選字段，用於驗證數據歸屬
 }
 
 interface StorageState {
