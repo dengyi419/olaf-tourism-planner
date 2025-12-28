@@ -1,19 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTravelStore } from '@/store/useTravelStore';
 import { useStorageStore } from '@/store/useStorageStore';
 import Clock from '@/components/Clock';
 import DaySection from '@/components/DaySection';
 import BudgetHeader from '@/components/BudgetHeader';
-import { Home, Trash2, Eye } from 'lucide-react';
+import { Home, Trash2, Save } from 'lucide-react';
 
 export default function HistoryPage() {
   const router = useRouter();
-  const { savedTrips, loadTrip, deleteTrip, clearCurrentTrip } = useStorageStore();
-  const { setItinerary, setTripSettings } = useTravelStore();
+  const { savedTrips, loadTrip, deleteTrip, clearCurrentTrip, updateCurrentTrip } = useStorageStore();
+  const { tripSettings, itinerary, setItinerary, setTripSettings } = useTravelStore();
   const [selectedTrip, setSelectedTrip] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleLoadTrip = (tripId: string) => {
     loadTrip(tripId);
@@ -22,6 +24,70 @@ export default function HistoryPage() {
       setTripSettings(trip.settings);
       setItinerary(trip.itinerary);
       setSelectedTrip(tripId);
+    }
+  };
+
+  // 監聽行程變化，自動保存
+  useEffect(() => {
+    if (selectedTrip && tripSettings && itinerary.length > 0) {
+      // 清除之前的定時器
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // 設置新的定時器，延遲 1 秒後保存（防抖）
+      saveTimeoutRef.current = setTimeout(async () => {
+        setIsSaving(true);
+        try {
+          await updateCurrentTrip(tripSettings, itinerary);
+          // 同時更新本地 savedTrips
+          const trip = savedTrips.find(t => t.id === selectedTrip);
+          if (trip) {
+            // 更新本地狀態
+            const updatedTrips = savedTrips.map(t =>
+              t.id === selectedTrip
+                ? { ...trip, settings: tripSettings, itinerary, updatedAt: new Date().toISOString() }
+                : t
+            );
+            useStorageStore.setState({ savedTrips: updatedTrips });
+          }
+        } catch (error) {
+          console.error('保存失敗:', error);
+        } finally {
+          setIsSaving(false);
+        }
+      }, 1000);
+    }
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [tripSettings, itinerary, selectedTrip, savedTrips, updateCurrentTrip]);
+
+  const handleManualSave = async () => {
+    if (!selectedTrip || !tripSettings || itinerary.length === 0) return;
+
+    setIsSaving(true);
+    try {
+      await updateCurrentTrip(tripSettings, itinerary);
+      // 更新本地 savedTrips
+      const trip = savedTrips.find(t => t.id === selectedTrip);
+      if (trip) {
+        const updatedTrips = savedTrips.map(t =>
+          t.id === selectedTrip
+            ? { ...trip, settings: tripSettings, itinerary, updatedAt: new Date().toISOString() }
+            : t
+        );
+        useStorageStore.setState({ savedTrips: updatedTrips });
+      }
+      alert('已儲存');
+    } catch (error) {
+      console.error('保存失敗:', error);
+      alert('儲存失敗，請重試');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -46,6 +112,17 @@ export default function HistoryPage() {
       {/* 右上角時鐘和按鈕 - 調整位置避免被狀態列擋住 */}
       <div className="fixed top-20 right-4 flex gap-3 z-50 flex-wrap justify-end max-w-[calc(100vw-2rem)]">
         <Clock />
+        {selectedTrip && tripSettings && (
+          <button
+            onClick={handleManualSave}
+            disabled={isSaving}
+            className="pixel-button px-4 py-2 text-sm disabled:opacity-50"
+            title="手動儲存"
+          >
+            <Save className="w-4 h-4 inline mr-2" />
+            {isSaving ? '儲存中...' : '儲存'}
+          </button>
+        )}
         <button
           onClick={() => router.push('/')}
           className="pixel-button px-4 py-2 text-sm"

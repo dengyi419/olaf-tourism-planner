@@ -20,16 +20,44 @@ export function calculateDistance(
 
 // 使用 Google Maps API 計算行程總距離
 export async function calculateTripDistance(
-  activities: Array<{ googleMapQuery: string }>
+  activities: Array<{ googleMapQuery: string }>,
+  retries: number = 3
 ): Promise<number> {
   if (activities.length < 2) return 0;
 
-  return new Promise((resolve) => {
-    if (typeof window === 'undefined' || !window.google?.maps) {
-      resolve(0);
-      return;
-    }
+  // 等待 Google Maps API 載入
+  const waitForGoogleMaps = (maxWait: number = 5000): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined') {
+        resolve(false);
+        return;
+      }
 
+      if (window.google?.maps) {
+        resolve(true);
+        return;
+      }
+
+      const startTime = Date.now();
+      const checkInterval = setInterval(() => {
+        if (window.google?.maps) {
+          clearInterval(checkInterval);
+          resolve(true);
+        } else if (Date.now() - startTime > maxWait) {
+          clearInterval(checkInterval);
+          resolve(false);
+        }
+      }, 100);
+    });
+  };
+
+  const isLoaded = await waitForGoogleMaps();
+  if (!isLoaded) {
+    console.warn('Google Maps API 未載入，無法計算距離');
+    return 0;
+  }
+
+  return new Promise((resolve) => {
     const { google } = window;
     const directionsService = new google.maps.DirectionsService();
     const waypoints = activities.slice(1, -1).map(activity => ({
@@ -44,15 +72,36 @@ export async function calculateTripDistance(
       travelMode: google.maps.TravelMode.DRIVING,
     };
 
+    // 設置超時
+    const timeout = setTimeout(() => {
+      console.warn('距離計算超時');
+      resolve(0);
+    }, 10000); // 10 秒超時
+
     directionsService.route(request, (result: any, status: string) => {
-      if (status === 'OK' && result) {
-        const totalDistance = result.routes[0].legs.reduce(
-          (total: number, leg: any) => total + leg.distance.value,
-          0
-        );
-        resolve(totalDistance / 1000); // 轉換為公里
+      clearTimeout(timeout);
+      
+      if (status === 'OK' && result && result.routes && result.routes[0]) {
+        try {
+          const totalDistance = result.routes[0].legs.reduce(
+            (total: number, leg: any) => total + (leg.distance?.value || 0),
+            0
+          );
+          resolve(totalDistance / 1000); // 轉換為公里
+        } catch (error) {
+          console.error('計算距離時發生錯誤:', error);
+          resolve(0);
+        }
       } else {
-        resolve(0);
+        // 如果失敗且有重試次數，嘗試重試
+        if (retries > 0 && (status === 'OVER_QUERY_LIMIT' || status === 'UNKNOWN_ERROR')) {
+          setTimeout(() => {
+            calculateTripDistance(activities, retries - 1).then(resolve);
+          }, 1000);
+        } else {
+          console.warn('距離計算失敗:', status);
+          resolve(0);
+        }
       }
     });
   });

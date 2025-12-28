@@ -181,7 +181,9 @@ export default function TripList() {
                   </div>
                   <div>
                     <div className="opacity-70">{t('tripList.distance')}</div>
-                    <div className="font-bold">{trip.distance.toFixed(1)} km</div>
+                    <div className="font-bold">
+                      {trip.distance > 0 ? `${trip.distance.toFixed(1)} km` : '計算中...'}
+                    </div>
                   </div>
                 </div>
               </div>
