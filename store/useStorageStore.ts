@@ -32,7 +32,7 @@ export const useStorageStore = create<StorageState>()(
       savedTrips: [],
       isSyncing: false,
 
-      saveCurrentTrip: async (name, settings?, itinerary?) => {
+      saveCurrentTrip: async (name, settings?, itinerary?, forceNewId = false) => {
         const state = get();
         const tripName = name || `行程 ${new Date().toLocaleDateString('zh-TW')}`;
         const now = new Date().toISOString();
@@ -47,8 +47,28 @@ export const useStorageStore = create<StorageState>()(
           return `trip-${timestamp}-${randomStr}`;
         };
         
+        // 決定使用哪個 ID
+        let tripId: string;
+        if (forceNewId) {
+          // 強制生成新 ID（用於保存舊行程時避免覆蓋）
+          tripId = generateUniqueId();
+        } else if (state.currentTrip?.id) {
+          // 檢查當前行程是否已經在 savedTrips 中
+          const isAlreadySaved = state.savedTrips.some(t => t.id === state.currentTrip!.id);
+          if (isAlreadySaved) {
+            // 如果已經保存過，使用原 ID（更新）
+            tripId = state.currentTrip.id;
+          } else {
+            // 如果還沒保存過，生成新 ID（創建新記錄）
+            tripId = generateUniqueId();
+          }
+        } else {
+          // 沒有當前行程，生成新 ID
+          tripId = generateUniqueId();
+        }
+        
         const newTrip: SavedTrip = {
-          id: state.currentTrip?.id || generateUniqueId(),
+          id: tripId,
           name: tripName,
           settings: tripSettings,
           itinerary: tripItinerary,
@@ -62,8 +82,10 @@ export const useStorageStore = create<StorageState>()(
           let updatedTrips = [...state.savedTrips];
           
           if (existingIndex >= 0) {
+            // 更新現有行程
             updatedTrips[existingIndex] = newTrip;
           } else {
+            // 添加新行程
             updatedTrips.push(newTrip);
           }
 

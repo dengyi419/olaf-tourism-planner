@@ -82,11 +82,22 @@ export default function PlanPage() {
   };
 
   const handleCreateNewTrip = async () => {
-    // 如果有當前行程且未保存，先自動保存
+    // 如果有當前行程且未保存，先自動保存（強制生成新 ID，避免覆蓋舊行程）
     if (tripSettings && itinerary.length > 0) {
       try {
-        await saveCurrentTrip(undefined, tripSettings, itinerary);
-        console.log('已自動保存舊行程');
+        // 檢查當前行程是否已經在 savedTrips 中
+        const { savedTrips, currentTrip } = useStorageStore.getState();
+        const isAlreadySaved = currentTrip?.id && savedTrips.some(t => t.id === currentTrip.id);
+        
+        if (!isAlreadySaved) {
+          // 如果還沒保存過，強制生成新 ID 保存，避免覆蓋
+          await saveCurrentTrip(undefined, tripSettings, itinerary, true);
+          console.log('已自動保存舊行程（新 ID）');
+        } else {
+          // 如果已經保存過，更新現有行程
+          await saveCurrentTrip(undefined, tripSettings, itinerary, false);
+          console.log('已更新舊行程');
+        }
       } catch (error) {
         console.error('自動保存舊行程失敗:', error);
       }
