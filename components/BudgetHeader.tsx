@@ -84,22 +84,22 @@ export default function BudgetHeader({ rightButtons }: BudgetHeaderProps) {
           
           <div className="flex items-center gap-6 flex-wrap">
             <div className="text-center">
-              <div className="text-xs">今日總花費</div>
-              <div className="text-base font-bold">
+              <div className="text-[8px] sm:text-xs">今日總花費</div>
+              <div className="text-xs sm:text-base font-bold">
                 {tripSettings.currency} {todaySpent.toLocaleString()}
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-xs">已花費</div>
-              <div className="text-base font-bold">
+              <div className="text-[8px] sm:text-xs">已花費</div>
+              <div className="text-xs sm:text-base font-bold">
                 {tripSettings.currency} {totalSpent.toLocaleString()}
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-xs">剩餘預算</div>
-              <div className="text-base font-bold">
+              <div className="text-[8px] sm:text-xs">剩餘預算</div>
+              <div className="text-xs sm:text-base font-bold">
                 {tripSettings.currency} {remaining.toLocaleString()}
               </div>
             </div>
