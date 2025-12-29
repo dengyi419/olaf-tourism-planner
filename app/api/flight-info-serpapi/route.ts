@@ -391,7 +391,7 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
           gate: undefined, // SerpAPI 通常不提供
           baggageClaim: undefined,
         },
-        status: isDelayed ? `延誤 ${delayMinutes} 分鐘` : (flight.status || '準時'),
+        status: isDelayed ? `延誤 ${delayMinutes} 分鐘` : '準時',
         isDelayed: isDelayed,
         delayMinutes: delayMinutes,
         scheduledTime: {
@@ -400,8 +400,9 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
           arrival: arrivalTime,
         },
         actualTime: {
-          departure: flight.departure_time_actual || flight.dep_actual || undefined,
-          arrival: flight.arrival_time_actual || flight.arr_actual || undefined,
+          // SerpAPI 通常不提供實際起飛時間，這裡先留空，未來如有需要可再從其他欄位推算
+          departure: undefined,
+          arrival: undefined,
         },
         // 行李資訊（如果有的話）
         baggageInfo: Object.keys(baggageInfo).length > 0 ? baggageInfo : undefined,
@@ -411,9 +412,9 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
         extensions: extensionsText || undefined,
         // 額外資訊
         airline: airline,
-        duration: leg.duration || option.total_duration || flight.duration, // 飛行時長（分鐘）
-        price: option.price || flight.price, // 價格
-        numberOfStops: option.layovers?.length || flight.number_of_stops || 0, // 經停次數
+        duration: leg.duration || option.total_duration || 0, // 飛行時長（分鐘）
+        price: option.price || 0, // 價格
+        numberOfStops: option.layovers?.length || 0, // 經停次數
         // 機場座標（用於地圖顯示，如果 API 提供）
         departureCoordinates: departure.coordinates || departure.lat_lng || undefined,
         arrivalCoordinates: arrival.coordinates || arrival.lat_lng || undefined,
