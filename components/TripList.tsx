@@ -109,7 +109,11 @@ export default function TripList() {
 
         const totalSpent = trip.itinerary.reduce((total, day) => {
           const activitiesCost = day.activities.reduce(
-            (sum, activity) => sum + activity.actualCost,
+            (sum, activity) => {
+              const activityCost = activity.actualCost || 0;
+              const transportCost = activity.transportCostFromPrevious || 0;
+              return sum + activityCost + transportCost;
+            },
             0
           );
           return total + activitiesCost + (day.extraExpenses || 0);
@@ -178,7 +182,11 @@ export default function TripList() {
 
         const totalSpent = trip.itinerary.reduce((total, day) => {
           const activitiesCost = day.activities.reduce(
-            (sum, activity) => sum + activity.actualCost,
+            (sum, activity) => {
+              const activityCost = activity.actualCost || 0;
+              const transportCost = activity.transportCostFromPrevious || 0;
+              return sum + activityCost + transportCost;
+            },
             0
           );
           return total + activitiesCost + (day.extraExpenses || 0);
