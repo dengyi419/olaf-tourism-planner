@@ -12,10 +12,11 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     
     // SerpAPI Google Flights API 端點
     // API 文檔：https://serpapi.com/google-flights-api
+    // 注意：SerpAPI Google Flights 需要出發地和目的地，或使用航班編號查詢
     const baseUrl = 'https://serpapi.com/search.json';
     const params = new URLSearchParams({
       engine: 'google_flights',
-      q: flightNumber,
+      q: flightNumber, // 使用航班編號作為查詢
       api_key: cleanedApiKey,
     });
     
