@@ -27,7 +27,7 @@ export default function TripList() {
   const { savedTrips, currentTrip, syncFromServer, loadTrip } = useStorageStore();
   const { tripSettings, itinerary, getTotalSpent, setTripSettings, setItinerary } = useTravelStore();
   const [tripSummaries, setTripSummaries] = useState<TripSummary[]>([]);
-  const [totalAllSpent, setTotalAllSpent] = useState(0);
+  const [totalAllSpentByCurrency, setTotalAllSpentByCurrency] = useState<Record<string, number>>({});
   const [totalAllDistance, setTotalAllDistance] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -133,7 +133,7 @@ export default function TripList() {
       if (!userEmail) {
         console.warn('沒有用戶 email，不顯示行程');
         setTripSummaries([]);
-        setTotalAllSpent(0);
+        setTotalAllSpentByCurrency({});
         setTotalAllDistance(0);
         setIsLoading(false);
         return;
@@ -197,12 +197,17 @@ export default function TripList() {
         });
       }
 
-      // 計算總計
-      const totalSpent = summaries.reduce((sum, trip) => sum + trip.totalSpent, 0);
+      // 計算總計（按貨幣分組）
+      const totalSpentByCurrency: Record<string, number> = {};
+      summaries.forEach(trip => {
+        const currency = trip.currency || 'TWD';
+        totalSpentByCurrency[currency] = (totalSpentByCurrency[currency] || 0) + trip.totalSpent;
+      });
+      
       const totalDistance = summaries.reduce((sum, trip) => sum + trip.distance, 0);
 
       setTripSummaries(summaries);
-      setTotalAllSpent(totalSpent);
+      setTotalAllSpentByCurrency(totalSpentByCurrency);
       setTotalAllDistance(totalDistance);
       setIsLoading(false);
     };
@@ -274,14 +279,23 @@ export default function TripList() {
           <div className="pixel-card p-3 bg-gray-100 border-2 border-black mt-4">
             <h3 className="text-sm font-bold mb-2">{t('tripList.total')}</h3>
             <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
                   <DollarSign className="w-3 h-3" />
                   <span>{t('tripList.totalSpent')}</span>
-                </span>
-                <span className="font-bold">
-                  {tripSummaries[0]?.currency || 'TWD'} {totalAllSpent.toLocaleString()}
-                </span>
+                </div>
+                {Object.keys(totalAllSpentByCurrency).length > 0 ? (
+                  <div className="space-y-1">
+                    {Object.entries(totalAllSpentByCurrency).map(([currency, amount]) => (
+                      <div key={currency} className="flex items-center justify-between">
+                        <span className="opacity-70">{currency}</span>
+                        <span className="font-bold">{amount.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="font-bold">0</div>
+                )}
               </div>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
