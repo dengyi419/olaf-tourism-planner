@@ -135,7 +135,7 @@ export default function ApiKeySettings() {
 
         <div>
           <label className="block text-xs mb-2">
-            AviationStack API Key
+            AirLabs API Key
             <span className="text-[10px] opacity-70 ml-2">
               (用於查詢實時航班信息)
             </span>
@@ -143,19 +143,19 @@ export default function ApiKeySettings() {
           <div className="flex gap-2">
             <div className="flex-1 relative">
               <input
-                type={showAviationStackKey ? 'text' : 'password'}
-                value={aviationStackApiKey}
-                onChange={(e) => setAviationStackApiKey(e.target.value)}
-                placeholder="輸入您的 AviationStack API Key"
+                type={showAirLabsKey ? 'text' : 'password'}
+                value={airLabsApiKey}
+                onChange={(e) => setAirLabsApiKey(e.target.value)}
+                placeholder="輸入您的 AirLabs API Key"
                 className="pixel-input w-full px-3 py-2 text-sm pr-10"
               />
               <button
                 type="button"
-                onClick={() => setShowAviationStackKey(!showAviationStackKey)}
+                onClick={() => setShowAirLabsKey(!showAirLabsKey)}
                 className="absolute right-2 top-1/2 -translate-y-1/2"
-                title={showAviationStackKey ? '隱藏' : '顯示'}
+                title={showAirLabsKey ? '隱藏' : '顯示'}
               >
-                {showAviationStackKey ? (
+                {showAirLabsKey ? (
                   <EyeOff className="w-4 h-4" />
                 ) : (
                   <Eye className="w-4 h-4" />
@@ -163,13 +163,13 @@ export default function ApiKeySettings() {
               </button>
             </div>
           </div>
-          {aviationStackApiKey && !showAviationStackKey && (
+          {airLabsApiKey && !showAirLabsKey && (
             <p className="text-[10px] opacity-70 mt-1">
-              已輸入: {maskApiKey(aviationStackApiKey)}
+              已輸入: {maskApiKey(airLabsApiKey)}
             </p>
           )}
           <p className="text-[10px] opacity-70 mt-1">
-            取得方式: <a href="https://aviationstack.com/" target="_blank" rel="noopener noreferrer" className="underline">AviationStack</a>
+            取得方式: <a href="https://airlabs.co/" target="_blank" rel="noopener noreferrer" className="underline">AirLabs</a>
           </p>
         </div>
 
