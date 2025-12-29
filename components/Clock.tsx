@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTravelStore } from '@/store/useTravelStore';
 import { useStorageStore } from '@/store/useStorageStore';
+import { Calendar } from 'lucide-react';
 
 export default function Clock() {
   const [time, setTime] = useState<Date | null>(null);
@@ -143,11 +144,6 @@ export default function Clock() {
       <div className="text-xs text-center" style={{ fontFamily: "'Press Start 2P', monospace", lineHeight: '1.6' }}>
         <div className="mb-1" suppressHydrationWarning>
           {time && formatTime(time)}
-          {countdown && (
-            <span className="ml-2 text-[8px] text-blue-600">
-              ({countdown.days}天{countdown.hours}小時)
-            </span>
-          )}
         </div>
         <div className="text-[8px]" suppressHydrationWarning>
           {formatDate(displayDate)}
@@ -155,6 +151,17 @@ export default function Clock() {
             <span className="ml-1 text-[6px] text-gray-500">(行程開始日)</span>
           )}
         </div>
+        {countdown && (
+          <div className="mt-2 pt-2 border-t-2 border-black">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Calendar className="w-3 h-3 text-blue-600" />
+              <span className="text-[8px] text-blue-600 font-bold">距離行程開始</span>
+            </div>
+            <div className="text-[10px] text-blue-600 font-bold">
+              {countdown.days}天 {countdown.hours}小時
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
