@@ -51,6 +51,7 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     const params = new URLSearchParams({
       engine: 'google_flights',
       api_key: cleanedApiKey,
+      type: '0', // 0 = 單程 (one-way), 1 = 來回程 (round trip)
     });
     
     // 如果提供了出發地和目的地機場代碼，使用它們
