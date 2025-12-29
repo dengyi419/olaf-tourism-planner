@@ -499,7 +499,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                       <span>下載</span>
                     </button>
                   </div>
-                  <div className="w-full overflow-x-auto bg-black rounded border-2 border-cyan-400 p-2">
+                  <div className="w-full overflow-x-auto bg-white rounded border-2 border-black p-2">
                     <div 
                       className="mx-auto"
                       style={{ 
