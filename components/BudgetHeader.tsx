@@ -12,8 +12,16 @@ export default function BudgetHeader() {
 
   const totalSpent = getTotalSpent();
   const remaining = getRemainingBudget();
+  
+  // 使用行程的開始日期來判斷「今天」是哪一天
+  // 如果行程有開始日期，使用開始日期；否則使用系統的今天
+  const tripStartDate = tripSettings.startDate || new Date().toISOString().split('T')[0];
   const today = new Date().toISOString().split('T')[0];
-  const todayDay = itinerary.find((day) => day.date === today);
+  
+  // 如果行程還沒開始（開始日期在未來），顯示開始日期那天的花費
+  // 如果行程已經開始或今天就是開始日期，顯示今天的花費
+  const targetDate = tripStartDate > today ? tripStartDate : today;
+  const todayDay = itinerary.find((day) => day.date === targetDate);
   const todaySpent = todayDay ? getTodaySpent(todayDay.dayId) : 0;
 
   const budgetPercentage = (totalSpent / tripSettings.totalBudget) * 100;
