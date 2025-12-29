@@ -72,8 +72,23 @@ export default function TripList() {
       }
 
       const summaries: TripSummary[] = [];
+      const today = new Date().toISOString().split('T')[0]; // 獲取當前日期
 
-      // 處理當前行程
+      // 檢查行程是否為當前進行中的行程（根據系統時間）
+      const checkIsCurrentTripByDate = (trip: any): boolean => {
+        if (!trip.settings?.startDate || !trip.itinerary || trip.itinerary.length === 0) {
+          return false;
+        }
+        
+        const startDate = trip.settings.startDate;
+        const lastDay = trip.itinerary[trip.itinerary.length - 1];
+        const endDate = lastDay?.date || startDate;
+        
+        // 檢查今天是否在行程日期範圍內
+        return today >= startDate && today <= endDate;
+      };
+
+      // 處理當前行程（如果存在）
       if (currentTrip || (tripSettings && itinerary.length > 0)) {
         const trip = currentTrip || {
           id: 'current',
@@ -109,7 +124,7 @@ export default function TripList() {
           currency: trip.settings.currency,
           distance,
           days: trip.itinerary.length,
-          isCurrent: true,
+          isCurrent: checkIsCurrentTripByDate(trip), // 根據系統時間判斷
         });
       }
 
@@ -178,7 +193,7 @@ export default function TripList() {
           currency: trip.settings.currency,
           distance,
           days: trip.itinerary.length,
-          isCurrent: false,
+          isCurrent: checkIsCurrentTripByDate(trip), // 根據系統時間判斷
         });
       }
 
