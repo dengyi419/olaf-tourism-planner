@@ -46,6 +46,7 @@ interface FlightInfo {
 }
 
 export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProps) {
+  const language = useLanguageStore((state) => state.language);
   const [flightNumber, setFlightNumber] = useState('');
   // 計算最小日期（前兩天）
   const getMinDate = () => {
