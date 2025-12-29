@@ -7,7 +7,7 @@ import { useStorageStore } from '@/store/useStorageStore';
 import { useTravelStore } from '@/store/useTravelStore';
 import { calculateTripDistance } from '@/utils/calculateDistance';
 import { t } from '@/store/useLanguageStore';
-import { MapPin, DollarSign, Calendar } from 'lucide-react';
+import { MapPin, DollarSign, Calendar, Trash2 } from 'lucide-react';
 
 interface TripSummary {
   id: string;
@@ -24,7 +24,7 @@ interface TripSummary {
 export default function TripList() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { savedTrips, currentTrip, syncFromServer, loadTrip } = useStorageStore();
+  const { savedTrips, currentTrip, syncFromServer, loadTrip, deleteTrip } = useStorageStore();
   const { tripSettings, itinerary, getTotalSpent, setTripSettings, setItinerary } = useTravelStore();
   const [tripSummaries, setTripSummaries] = useState<TripSummary[]>([]);
   const [totalAllSpentByCurrency, setTotalAllSpentByCurrency] = useState<Record<string, number>>({});
@@ -243,40 +243,61 @@ export default function TripList() {
             {tripSummaries.map((trip) => (
               <div
                 key={trip.id}
-                onClick={() => handleTripClick(trip.id)}
-                className={`pixel-card p-3 border-2 cursor-pointer hover:bg-gray-100 transition-colors ${
+                className={`pixel-card p-3 border-2 hover:bg-gray-100 transition-colors relative ${
                   trip.isCurrent ? 'border-yellow-500 bg-yellow-50' : 'border-black'
                 }`}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <h3 className="text-sm font-bold mb-1">
-                      {trip.name}
-                      {trip.isCurrent && (
-                        <span className="ml-2 text-xs bg-yellow-500 px-2 py-0.5">{t('tripList.current')}</span>
-                      )}
-                    </h3>
-                    <div className="flex items-center gap-2 text-xs opacity-70 mb-1">
-                      <MapPin className="w-3 h-3" />
-                      <span>{trip.destination}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs opacity-70">
-                      <Calendar className="w-3 h-3" />
-                      <span>{trip.days} {t('tripList.days')}</span>
+                {/* 刪除按鈕 - 右上角 */}
+                {trip.id !== 'current' && (
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (confirm('確定要刪除此行程嗎？')) {
+                        await deleteTrip(trip.id);
+                        await syncFromServer();
+                      }
+                    }}
+                    className="absolute top-2 right-2 pixel-button px-2 py-1 text-xs bg-red-500 hover:bg-red-600 z-10"
+                    title="刪除行程"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+                
+                <div
+                  onClick={() => handleTripClick(trip.id)}
+                  className="cursor-pointer pr-8"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <h3 className="text-sm font-bold mb-1">
+                        {trip.name}
+                        {trip.isCurrent && (
+                          <span className="ml-2 text-xs bg-yellow-500 px-2 py-0.5">{t('tripList.current')}</span>
+                        )}
+                      </h3>
+                      <div className="flex items-center gap-2 text-xs opacity-70 mb-1">
+                        <MapPin className="w-3 h-3" />
+                        <span>{trip.destination}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs opacity-70">
+                        <Calendar className="w-3 h-3" />
+                        <span>{trip.days} {t('tripList.days')}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
-                  <div>
-                    <div className="opacity-70">{t('tripList.spent')}</div>
-                    <div className="font-bold">
-                      {trip.currency} {trip.totalSpent.toLocaleString()} / {trip.totalBudget.toLocaleString()}
+                  <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                    <div>
+                      <div className="opacity-70">{t('tripList.spent')}</div>
+                      <div className="font-bold">
+                        {trip.currency} {trip.totalSpent.toLocaleString()} / {trip.totalBudget.toLocaleString()}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <div className="opacity-70">{t('tripList.distance')}</div>
-                    <div className="font-bold">
-                      {trip.distance > 0 ? `${trip.distance.toFixed(1)} km` : '計算中...'}
+                    <div>
+                      <div className="opacity-70">{t('tripList.distance')}</div>
+                      <div className="font-bold">
+                        {trip.distance > 0 ? `${trip.distance.toFixed(1)} km` : '計算中...'}
+                      </div>
                     </div>
                   </div>
                 </div>
