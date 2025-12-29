@@ -561,15 +561,17 @@ export async function POST(request: NextRequest) {
             arrActual = parseTime(airLabsFlightInfo.arr_actual || airLabsFlightInfo.arr_actual_ts);
           }
           
-          // 優先使用 SerpAPI 的時間數據，如果沒有再使用 AirLabs（僅限今天）
+          // 優先使用 SerpAPI 的時間數據
+          // 對於未來日期，必須使用 SerpAPI 的時間（因為 AirLabs 只能查詢當天）
+          // 對於今天，如果 SerpAPI 沒有時間，可以使用 AirLabs 的實時數據
           const scheduledDeparture = serpApiFlightInfo.scheduledTime?.departure || 
-            (depTime ? depTime.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined);
+            (isToday && depTime ? depTime.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined);
           const scheduledArrival = serpApiFlightInfo.scheduledTime?.arrival || 
-            (arrTime ? arrTime.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined);
+            (isToday && arrTime ? arrTime.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined);
           const actualDeparture = serpApiFlightInfo.actualTime?.departure || 
-            (depActual ? depActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined);
+            (isToday && depActual ? depActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined);
           const actualArrival = serpApiFlightInfo.actualTime?.arrival || 
-            (arrActual ? arrActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined);
+            (isToday && arrActual ? arrActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined);
           
           // 計算延誤時間（僅限今天，使用 AirLabs 的實時數據）
           let isDelayed = serpApiFlightInfo.isDelayed || false;
