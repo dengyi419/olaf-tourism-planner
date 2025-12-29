@@ -10,7 +10,7 @@ import { Home, Upload, FileText, Sparkles } from 'lucide-react';
 export default function RAGPlanPage() {
   const router = useRouter();
   const { setItinerary, setTripSettings } = useTravelStore();
-  const { updateCurrentTrip } = useStorageStore();
+  const { saveCurrentTrip, clearCurrentTrip } = useStorageStore();
   
   const [tripName, setTripName] = useState('');
   const [destination, setDestination] = useState('');
@@ -208,12 +208,11 @@ export default function RAGPlanPage() {
 
       setItinerary(itineraryWithDates);
 
-      // 儲存行程
-      await updateCurrentTrip({
-        name: tripName,
-        settings,
-        itinerary: itineraryWithDates,
-      }, true);
+      // 清除當前行程，確保生成新 ID（避免覆蓋舊行程）
+      clearCurrentTrip();
+      
+      // 儲存行程（使用 saveCurrentTrip，它接受 name 參數）
+      await saveCurrentTrip(tripName, settings, itineraryWithDates, true);
 
       // 跳轉到規劃頁面
       router.push('/plan');
