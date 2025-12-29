@@ -33,6 +33,7 @@ interface FlightInfo {
 
 export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProps) {
   const [flightNumber, setFlightNumber] = useState('');
+  const [flightDate, setFlightDate] = useState(new Date().toISOString().split('T')[0]); // 預設為今天
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [flightInfo, setFlightInfo] = useState<FlightInfo | null>(null);
@@ -60,6 +61,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
         },
         body: JSON.stringify({ 
           flightNumber: flightNumber.trim().toUpperCase(),
+          flightDate: flightDate || undefined, // 傳遞日期參數
           userApiKey: userApiKey || undefined,
         }),
       });
@@ -104,29 +106,48 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs mb-2">航班編號</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={flightNumber}
-                onChange={(e) => setFlightNumber(e.target.value.toUpperCase())}
-                onKeyPress={handleKeyPress}
-                placeholder="例如：CI100、BR101、JX123"
-                className="pixel-input flex-1 px-4 py-2"
-              />
-              <button
-                onClick={handleSearch}
-                disabled={isLoading}
-                className="pixel-button px-4 py-2 text-xs disabled:opacity-50"
-              >
-                {isLoading ? (
-                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Search className="w-4 h-4" />
-                )}
-              </button>
-            </div>
+            <label className="block text-xs mb-2">航班編號 *</label>
+            <input
+              type="text"
+              value={flightNumber}
+              onChange={(e) => setFlightNumber(e.target.value.toUpperCase())}
+              onKeyPress={handleKeyPress}
+              placeholder="例如：CI100、BR101、JX123"
+              className="pixel-input w-full px-4 py-2"
+            />
           </div>
+
+          <div>
+            <label className="block text-xs mb-2">查詢日期</label>
+            <input
+              type="date"
+              value={flightDate}
+              onChange={(e) => setFlightDate(e.target.value)}
+              className="pixel-input w-full px-4 py-2"
+              min={new Date().toISOString().split('T')[0]} // 不能選擇過去的日期
+            />
+            <p className="text-[10px] opacity-70 mt-1">
+              選擇要查詢的航班日期（預設為今天）
+            </p>
+          </div>
+
+          <button
+            onClick={handleSearch}
+            disabled={isLoading || !flightNumber.trim()}
+            className="pixel-button w-full py-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin inline-block mr-2" />
+                查詢中...
+              </>
+            ) : (
+              <>
+                <Search className="w-4 h-4 inline mr-2" />
+                查詢航班信息
+              </>
+            )}
+          </button>
 
           {error && (
             <div className="pixel-card p-3 bg-red-100 border-red-500 text-red-700 text-xs">

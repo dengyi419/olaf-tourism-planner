@@ -50,7 +50,7 @@ const FLIGHT_DATABASE: Record<string, any> = {
 };
 
 // AviationStack API 查詢函數
-async function queryAviationStack(flightNumber: string, apiKey: string) {
+async function queryAviationStack(flightNumber: string, apiKey: string, flightDate?: string) {
   try {
     // AviationStack API 端點
     // API 文檔：https://aviationstack.com/documentation
@@ -60,6 +60,11 @@ async function queryAviationStack(flightNumber: string, apiKey: string) {
       flight_iata: flightNumber,
       limit: '1',
     });
+    
+    // 如果提供了日期，添加到查詢參數中
+    if (flightDate) {
+      params.append('flight_date', flightDate);
+    }
     
     const response = await fetch(`${baseUrl}?${params.toString()}`, {
       method: 'GET',
@@ -124,7 +129,7 @@ async function queryAviationStack(flightNumber: string, apiKey: string) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { flightNumber, userApiKey } = body;
+    const { flightNumber, flightDate, userApiKey } = body;
 
     if (!flightNumber) {
       return NextResponse.json(
@@ -141,7 +146,7 @@ export async function POST(request: NextRequest) {
     
     if (aviationStackApiKey) {
       try {
-        const flightInfo = await queryAviationStack(cleanedFlightNumber, aviationStackApiKey);
+        const flightInfo = await queryAviationStack(cleanedFlightNumber, aviationStackApiKey, flightDate);
         return NextResponse.json(flightInfo);
       } catch (error: any) {
         console.error('AviationStack 查詢失敗:', error);
