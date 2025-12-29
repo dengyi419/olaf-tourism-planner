@@ -1,7 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// 先從 AirLabs 獲取機場信息，然後用 SerpAPI 查詢詳細信息
+async function getAirportInfoFromAirLabs(flightNumber: string, airLabsApiKey?: string): Promise<{departure?: string, arrival?: string} | null> {
+  if (!airLabsApiKey) return null;
+  
+  try {
+    const response = await fetch('/api/flight-info', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ flightNumber, userApiKey: airLabsApiKey }),
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        departure: data.departure?.airport,
+        arrival: data.arrival?.airport,
+      };
+    }
+  } catch (error) {
+    console.warn('無法從 AirLabs 獲取機場信息:', error);
+  }
+  return null;
+}
+
 // SerpAPI Google Flights API 查詢函數
-async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightDate?: string) {
+async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightDate?: string, departureAirport?: string, arrivalAirport?: string) {
   try {
     // 清理 API Key（去除前後空格和換行符）
     const cleanedApiKey = apiKey.trim().replace(/\s+/g, '');
@@ -12,13 +36,22 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     
     // SerpAPI Google Flights API 端點
     // API 文檔：https://serpapi.com/google-flights-api
-    // 注意：SerpAPI Google Flights 需要出發地和目的地，或使用航班編號查詢
+    // 注意：SerpAPI Google Flights 需要 departure_id 和 arrival_id（機場代碼）
     const baseUrl = 'https://serpapi.com/search.json';
     const params = new URLSearchParams({
       engine: 'google_flights',
-      q: flightNumber, // 使用航班編號作為查詢
       api_key: cleanedApiKey,
     });
+    
+    // 如果提供了出發地和目的地機場代碼，使用它們
+    if (departureAirport && arrivalAirport) {
+      params.append('departure_id', departureAirport);
+      params.append('arrival_id', arrivalAirport);
+    } else {
+      // 如果沒有機場代碼，嘗試使用航班編號查詢（但這可能不會工作）
+      // 或者返回錯誤提示用戶需要機場信息
+      throw new Error('SerpAPI Google Flights API 需要出發地和目的地機場代碼。請先使用 AirLabs API 獲取機場信息，或手動輸入機場代碼。');
+    }
     
     // 如果提供了日期，添加到查詢參數中
     if (flightDate) {

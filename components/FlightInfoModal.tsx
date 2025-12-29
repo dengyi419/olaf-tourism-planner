@@ -68,6 +68,11 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
       const userApiKey = typeof window !== 'undefined' 
         ? localStorage.getItem(apiKeyName) || ''
         : '';
+      
+      // 如果使用 SerpAPI，也需要 AirLabs API Key 來獲取機場代碼
+      const airLabsApiKey = useSerpAPI && typeof window !== 'undefined'
+        ? localStorage.getItem('user_airlabs_api_key') || ''
+        : undefined;
 
       const apiEndpoint = useSerpAPI ? '/api/flight-info-serpapi' : '/api/flight-info';
 
@@ -80,6 +85,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
           flightNumber: flightNumber.trim().toUpperCase(),
           flightDate: flightDate || undefined, // 傳遞日期參數
           userApiKey: userApiKey || undefined,
+          airLabsApiKey: airLabsApiKey || undefined, // SerpAPI 需要 AirLabs 來獲取機場代碼
         }),
       });
 
