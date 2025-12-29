@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Search, Plane, MapPin, DoorOpen, Luggage, AlertCircle } from 'lucide-react';
 import FlightRouteMap from './FlightRouteMap';
+import { useLanguageStore, t } from '@/store/useLanguageStore';
 
 interface FlightInfoModalProps {
   isOpen: boolean;
@@ -103,7 +104,8 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
       const data = await response.json();
       setFlightInfo(data);
     } catch (err: any) {
-      setError(err.message || '查詢航班信息時發生錯誤');
+      const errorMsg = err.message || (language === 'zh-TW' ? '查詢航班信息時發生錯誤' : language === 'en' ? 'An error occurred while querying flight information' : language === 'ja' ? 'フライト情報の照会中にエラーが発生しました' : '항공편 정보 조회 중 오류가 발생했습니다');
+      setError(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -135,19 +137,19 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs mb-2">航班編號 *</label>
+            <label className="block text-xs mb-2">{t('flight.flightNumber')} *</label>
             <input
               type="text"
               value={flightNumber}
               onChange={(e) => setFlightNumber(e.target.value.toUpperCase())}
               onKeyPress={handleKeyPress}
-              placeholder="例如：CI100、BR101、JX123"
+              placeholder={language === 'zh-TW' ? '例如：CI100、BR101、JX123' : language === 'en' ? 'e.g., CI100, BR101, JX123' : language === 'ja' ? '例：CI100、BR101、JX123' : '예: CI100, BR101, JX123'}
               className="pixel-input w-full px-4 py-2"
             />
           </div>
 
           <div>
-            <label className="block text-xs mb-2">查詢日期</label>
+            <label className="block text-xs mb-2">{t('flight.date')}</label>
             <input
               type="date"
               value={flightDate}
@@ -157,29 +159,29 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
             />
             <p className="text-[10px] opacity-70 mt-1">
               {useSerpAPI 
-                ? 'SerpAPI 支持日期查詢，將查詢指定日期的航班信息（實時狀態來自 AirLabs，僅顯示當天數據）'
-                : '注意：AirLabs API 目前不支持日期參數，將查詢實時航班信息'}
+                ? t('flight.dateNoteSerpAPI')
+                : t('flight.dateNote')}
             </p>
           </div>
 
           <div>
-            <label className="block text-xs mb-2">查詢方式</label>
+            <label className="block text-xs mb-2">{t('flight.apiSelect')}</label>
             <div className="flex gap-2">
               <button
                 onClick={() => setUseSerpAPI(false)}
                 className={`pixel-button flex-1 py-2 text-xs ${!useSerpAPI ? 'bg-blue-200' : ''}`}
               >
-                AirLabs
+                {t('flight.apiAirLabs')}
               </button>
               <button
                 onClick={() => setUseSerpAPI(true)}
                 className={`pixel-button flex-1 py-2 text-xs ${useSerpAPI ? 'bg-blue-200' : ''}`}
               >
-                SerpAPI (含延誤資訊)
+                {t('flight.apiSerpAPI')}
               </button>
             </div>
             <p className="text-[10px] opacity-70 mt-1">
-              SerpAPI 提供延誤狀態和地圖路線顯示
+              {language === 'zh-TW' ? 'SerpAPI 提供延誤狀態和地圖路線顯示' : language === 'en' ? 'SerpAPI provides delay status and route map display' : language === 'ja' ? 'SerpAPIは遅延ステータスとルートマップ表示を提供' : 'SerpAPI는 지연 상태 및 경로 지도 표시 제공'}
             </p>
           </div>
 
@@ -191,12 +193,12 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
             {isLoading ? (
               <>
                 <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin inline-block mr-2" />
-                查詢中...
+                {t('flight.searching')}
               </>
             ) : (
               <>
                 <Search className="w-4 h-4 inline mr-2" />
-                查詢航班信息
+                {t('flight.search')}
               </>
             )}
           </button>
@@ -341,30 +343,30 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                   <div className="mt-4 pt-4 border-t-2 border-black">
                     <div className="flex items-center gap-2 mb-2">
                       <Luggage className="w-4 h-4" />
-                      <span className="text-xs font-bold">行李資訊</span>
+                      <span className="text-xs font-bold">{t('flight.baggageInfo')}</span>
                     </div>
                     <div className="pl-6 space-y-1 text-xs">
                       {flightInfo.arrival.baggageClaim && (
                         <div className="flex items-center gap-1">
-                          <span>行李轉盤：</span>
+                          <span>{t('flight.baggageClaim')}：</span>
                           <span className="font-bold">{flightInfo.arrival.baggageClaim}</span>
                         </div>
                       )}
                       {flightInfo.baggageInfo?.baggageAllowance && (
                         <div>
-                          <span>行李限額：</span>
+                          <span>{t('flight.baggageAllowance')}：</span>
                           <span className="font-bold">{flightInfo.baggageInfo.baggageAllowance}</span>
                         </div>
                       )}
                       {flightInfo.baggageInfo?.carryOn && (
                         <div>
-                          <span>隨身行李：</span>
+                          <span>{t('flight.carryOn')}：</span>
                           <span className="font-bold">{flightInfo.baggageInfo.carryOn}</span>
                         </div>
                       )}
                       {flightInfo.baggageInfo?.checkedBaggage && (
                         <div>
-                          <span>託運行李：</span>
+                          <span>{t('flight.checkedBaggage')}：</span>
                           <span className="font-bold">{flightInfo.baggageInfo.checkedBaggage}</span>
                         </div>
                       )}
@@ -376,7 +378,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
               {/* Google Maps 路線圖（僅在使用 SerpAPI 時顯示） */}
               {useSerpAPI && flightInfo.departure.airport && flightInfo.arrival.airport && (
                 <div className="pixel-card p-4 border-2 border-black">
-                  <h4 className="text-xs font-bold mb-2">機場路線圖</h4>
+                  <h4 className="text-xs font-bold mb-2">{t('flight.routeMap')}</h4>
                   <FlightRouteMap
                     departureAirport={flightInfo.departure.airport}
                     arrivalAirport={flightInfo.arrival.airport}

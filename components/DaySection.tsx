@@ -13,7 +13,7 @@ interface DaySectionProps {
 }
 
 export default function DaySection({ day }: DaySectionProps) {
-  const { addActivity, deleteDay, getTodaySpent, tripSettings } = useTravelStore();
+  const { addActivity, deleteDay, getTodaySpent, tripSettings, updateActivity } = useTravelStore();
   const [showAddForm, setShowAddForm] = useState(false);
   
   // 計算初始時間：如果這天已有活動，使用最後一個活動的時間+1小時，否則使用 09:00
@@ -145,8 +145,39 @@ export default function DaySection({ day }: DaySectionProps) {
       </div>
 
       <div className="space-y-3">
-        {day.activities.map((activity) => (
-          <ActivityCard key={activity.id} activity={activity} dayId={day.dayId} />
+        {day.activities.map((activity, index) => (
+          <div key={activity.id}>
+            {/* 活動卡片 */}
+            <ActivityCard activity={activity} dayId={day.dayId} />
+            
+            {/* 活動之間的連接線和交通費用輸入（不是最後一個活動時顯示） */}
+            {index < day.activities.length - 1 && (
+              <div className="flex items-center gap-2 my-2 px-4">
+                <div className="flex-1 border-t-2 border-black"></div>
+                <div className="flex items-center gap-2 bg-white border-2 border-black px-3 py-1">
+                  <label className="text-xs whitespace-nowrap">交通費用:</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={day.activities[index + 1].transportCostFromPrevious || 0}
+                    onChange={(e) => {
+                      const transportCost = parseFloat(e.target.value) || 0;
+                      const nextActivity = day.activities[index + 1];
+                      const { updateActivity } = useTravelStore.getState();
+                      updateActivity(day.dayId, nextActivity.id, {
+                        transportCostFromPrevious: transportCost,
+                      });
+                    }}
+                    className="pixel-input w-24 px-2 py-1 text-xs text-center"
+                    placeholder="0"
+                  />
+                  <span className="text-xs">{tripSettings?.currency || 'TWD'}</span>
+                </div>
+                <div className="flex-1 border-t-2 border-black"></div>
+              </div>
+            )}
+          </div>
         ))}
 
         {showAddForm ? (

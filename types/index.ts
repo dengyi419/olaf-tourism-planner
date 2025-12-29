@@ -7,6 +7,7 @@ export type Activity = {
   estimatedCost: number; // AI 預估花費（僅供參考，不從預算扣除）
   actualCost: number; // 使用者實際花費（會從預算扣除）
   category: 'food' | 'transport' | 'sightseeing' | 'shopping';
+  transportCostFromPrevious?: number; // 從上一個活動到此活動的交通費用（0到無上限）
 };
 
 export type DayItinerary = {

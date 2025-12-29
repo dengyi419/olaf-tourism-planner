@@ -99,7 +99,11 @@ export const useTravelStore = create<TravelState>((set, get) => ({
   getTotalSpent: () => {
     const state = get();
     return state.itinerary.reduce((total, day) => {
-      const activitiesCost = day.activities.reduce((dayTotal, activity) => dayTotal + activity.actualCost, 0);
+      const activitiesCost = day.activities.reduce((dayTotal, activity) => {
+        const activityCost = activity.actualCost || 0;
+        const transportCost = activity.transportCostFromPrevious || 0;
+        return dayTotal + activityCost + transportCost;
+      }, 0);
       const extraCost = day.extraExpenses || 0;
       return total + activitiesCost + extraCost;
     }, 0);
@@ -115,7 +119,11 @@ export const useTravelStore = create<TravelState>((set, get) => ({
     const state = get();
     const day = state.itinerary.find((d) => d.dayId === dayId);
     if (!day) return 0;
-    const activitiesCost = day.activities.reduce((total, activity) => total + activity.actualCost, 0);
+    const activitiesCost = day.activities.reduce((total, activity) => {
+      const activityCost = activity.actualCost || 0;
+      const transportCost = activity.transportCostFromPrevious || 0;
+      return total + activityCost + transportCost;
+    }, 0);
     const extraCost = day.extraExpenses || 0;
     return activitiesCost + extraCost;
   },
