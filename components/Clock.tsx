@@ -39,6 +39,37 @@ export default function Clock() {
     });
   };
 
+  // 獲取要顯示的日期（如果有行程，顯示行程開始日期；否則顯示當前日期）
+  const getDisplayDate = () => {
+    // 優先使用當前行程的開始日期
+    if (tripSettings?.startDate && itinerary.length > 0) {
+      const startDate = new Date(tripSettings.startDate);
+      if (!isNaN(startDate.getTime())) {
+        return startDate;
+      }
+    }
+    
+    // 如果沒有當前行程，從所有行程中找最近的開始日期
+    const allTrips = currentTrip ? [currentTrip, ...savedTrips] : savedTrips;
+    const tripsWithStartDate = allTrips
+      .filter(trip => trip.settings?.startDate)
+      .map(trip => ({
+        id: trip.id,
+        startDate: trip.settings!.startDate!,
+      }))
+      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+    
+    if (tripsWithStartDate.length > 0) {
+      const nearestStartDate = new Date(tripsWithStartDate[0].startDate);
+      if (!isNaN(nearestStartDate.getTime())) {
+        return nearestStartDate;
+      }
+    }
+    
+    // 如果沒有行程，返回當前日期
+    return time || new Date();
+  };
+
   // 計算距離最近行程的倒數時間
   const getCountdown = () => {
     const today = new Date().toISOString().split('T')[0];
@@ -105,18 +136,25 @@ export default function Clock() {
     );
   }
 
+  const displayDate = getDisplayDate();
+
   return (
     <div className="pixel-card p-3 bg-white">
       <div className="text-xs text-center" style={{ fontFamily: "'Press Start 2P', monospace", lineHeight: '1.6' }}>
         <div className="mb-1" suppressHydrationWarning>
-          {formatTime(time)}
+          {time && formatTime(time)}
           {countdown && (
             <span className="ml-2 text-[8px] text-blue-600">
               ({countdown.days}天{countdown.hours}小時)
             </span>
           )}
         </div>
-        <div className="text-[8px]" suppressHydrationWarning>{formatDate(time)}</div>
+        <div className="text-[8px]" suppressHydrationWarning>
+          {formatDate(displayDate)}
+          {tripSettings?.startDate && displayDate.toISOString().split('T')[0] !== new Date().toISOString().split('T')[0] && (
+            <span className="ml-1 text-[6px] text-gray-500">(行程開始日)</span>
+          )}
+        </div>
       </div>
     </div>
   );
