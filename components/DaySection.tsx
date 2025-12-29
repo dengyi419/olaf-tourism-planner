@@ -6,7 +6,7 @@ import RouteMap from './RouteMap';
 import LocationAutocomplete from './LocationAutocomplete';
 import { Plus, Trash2 } from 'lucide-react';
 import { useTravelStore } from '@/store/useTravelStore';
-import { useState, useEffect as ReactUseEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 interface DaySectionProps {
   day: DayItinerary;
@@ -15,8 +15,24 @@ interface DaySectionProps {
 export default function DaySection({ day }: DaySectionProps) {
   const { addActivity, deleteDay, getTodaySpent, tripSettings } = useTravelStore();
   const [showAddForm, setShowAddForm] = useState(false);
+  
+  // 計算初始時間：如果這天已有活動，使用最後一個活動的時間+1小時，否則使用 09:00
+  const getInitialTime = () => {
+    if (day.activities.length > 0) {
+      const lastActivity = day.activities[day.activities.length - 1];
+      const [hours, minutes] = lastActivity.time.split(':').map(Number);
+      const nextDate = new Date();
+      nextDate.setHours(hours, minutes, 0, 0);
+      nextDate.setHours(nextDate.getHours() + 1);
+      const nextHours = nextDate.getHours().toString().padStart(2, '0');
+      const nextMinutes = nextDate.getMinutes().toString().padStart(2, '0');
+      return `${nextHours}:${nextMinutes}`;
+    }
+    return '09:00';
+  };
+  
   const [newActivity, setNewActivity] = useState<Partial<Activity>>({
-    time: '09:00',
+    time: getInitialTime(),
     locationName: '',
     description: '',
     googleMapQuery: '',
@@ -24,6 +40,16 @@ export default function DaySection({ day }: DaySectionProps) {
     actualCost: 0,
     category: 'sightseeing',
   });
+  
+  // 當打開表單時，更新時間為最後一個活動的時間+1小時
+  useEffect(() => {
+    if (showAddForm) {
+      setNewActivity(prev => ({
+        ...prev,
+        time: getInitialTime(),
+      }));
+    }
+  }, [showAddForm, day.activities.length]);
 
   const todaySpent = getTodaySpent(day.dayId);
 
