@@ -95,8 +95,16 @@ ${excludedPlaces}
 `;
     }
     
+    // 處理多個地點的情況（如果 destination 包含逗號或分隔符）
+    const destinations = destination.split(/[,，、]/).map(d => d.trim()).filter(d => d);
+    const destinationText = destinations.length > 1 
+      ? `${destinations.join('、')}（共 ${destinations.length} 個地點）`
+      : destination;
+    
     const userPrompt = `
-請為我規劃一個 ${days} 天的 ${destination} 旅遊行程。
+請為我規劃一個 ${days} 天的 ${destinationText} 旅遊行程。
+
+**重要：必須生成 ${days} 天的行程，不能多也不能少。每一天都必須有活動安排。**
 
 總預算：${budget} ${currency}
 目標使用預算：${targetBudget} ${currency}（約 90%）

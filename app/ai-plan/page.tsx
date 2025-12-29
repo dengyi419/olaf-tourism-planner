@@ -140,11 +140,37 @@ export default function AIPlanPage() {
       };
       setTripSettings(settings);
 
+      // 驗證返回的行程天數是否與請求的天數一致
+      const returnedDays = data.itinerary?.length || 0;
+      if (returnedDays !== days) {
+        console.warn(`AI 返回的行程天數 (${returnedDays}) 與請求的天數 (${days}) 不一致`);
+        // 如果返回的天數少於請求的天數，補充空天數
+        if (returnedDays < days) {
+          for (let i = returnedDays; i < days; i++) {
+            data.itinerary.push({
+              dayId: i + 1,
+              activities: [],
+            });
+          }
+        }
+        // 如果返回的天數多於請求的天數，截取前 N 天
+        if (returnedDays > days) {
+          data.itinerary = data.itinerary.slice(0, days);
+        }
+      }
+
+      // 確保每個 day 都有正確的 dayId
+      data.itinerary = data.itinerary.map((day: any, index: number) => ({
+        ...day,
+        dayId: day.dayId || index + 1,
+      }));
+
       // 設定行程（為每一天添加日期，使用設定的開始日期或今天）
       const baseDate = startDate || new Date().toISOString().split('T')[0];
       const baseDateObj = new Date(baseDate);
       const itineraryWithDates = data.itinerary.map((day: any, index: number) => ({
         ...day,
+        dayId: day.dayId || index + 1, // 確保 dayId 正確
         date: new Date(baseDateObj.getTime() + index * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       }));
 
