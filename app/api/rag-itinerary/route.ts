@@ -35,8 +35,9 @@ const GEMINI_SYSTEM_PROMPT = `
 7. **行程安排**：需考慮地理位置順序，避免繞路。
 `;
 
-// 使用簡單的關鍵字匹配作為 RAG 檢索（因為 Gemini 沒有公開的 embedding API）
-// 未來可以整合其他 embedding 服務（如 OpenAI、Cohere 等）
+// ------- 關鍵字匹配（後備 RAG 策略） -------
+
+// 使用簡單的關鍵字匹配作為 RAG 檢索的後備方案
 function extractKeywords(text: string): string[] {
   // 提取中文和英文關鍵字
   const chineseWords = text.match(/[\u4e00-\u9fa5]+/g) || [];
@@ -62,8 +63,8 @@ function calculateTextSimilarity(textA: string, textB: string): number {
   return union > 0 ? intersection / union : 0; // Jaccard 相似度
 }
 
-// 檢索最相關的文檔片段（使用關鍵字匹配作為 RAG）
-function retrieveRelevantChunks(
+// 使用關鍵字匹配檢索文檔片段（後備方案）
+function retrieveRelevantChunksByKeyword(
   query: string,
   documentChunks: string[],
   topK: number = 5
@@ -88,6 +89,119 @@ function retrieveRelevantChunks(
   return selectedChunks;
 }
 
+// ------- Hugging Face Embedding RAG 策略 -------
+
+// 使用 Hugging Face Inference API 生成向量
+async function generateEmbeddingHF(text: string, hfApiKey: string): Promise<number[]> {
+  const cleanedKey = hfApiKey.trim();
+  if (!cleanedKey) {
+    throw new Error('Hugging Face API Key 為空');
+  }
+
+  const response = await fetch(
+    'https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${cleanedKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ inputs: text }),
+    }
+  );
+
+  if (!response.ok) {
+    let errorBody: any = null;
+    try {
+      errorBody = await response.json();
+    } catch {
+      // ignore
+    }
+    console.error('Hugging Face Embedding API 錯誤:', {
+      status: response.status,
+      statusText: response.statusText,
+      body: errorBody,
+    });
+    throw new Error(`Hugging Face Embedding API 錯誤 (${response.status})`);
+  }
+
+  const data = await response.json();
+
+  // 典型回傳為 [[...向量...]] 或 {...}
+  let embedding: any = data;
+  if (Array.isArray(data)) {
+    if (Array.isArray(data[0])) {
+      embedding = data[0];
+    }
+  } else if (data && Array.isArray(data.embeddings)) {
+    embedding = data.embeddings[0];
+  }
+
+  if (!Array.isArray(embedding)) {
+    throw new Error('Hugging Face Embedding 回傳格式不正確');
+  }
+
+  return embedding as number[];
+}
+
+// 計算餘弦相似度
+function cosineSimilarity(vecA: number[], vecB: number[]): number {
+  if (vecA.length !== vecB.length) return 0;
+  
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  
+  for (let i = 0; i < vecA.length; i++) {
+    dotProduct += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
+  }
+  
+  if (normA === 0 || normB === 0) return 0;
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+// 綜合 RAG 檢索：優先使用 Hugging Face Embedding，失敗時回退到關鍵字匹配
+async function retrieveRelevantChunks(
+  query: string,
+  documentChunks: string[],
+  hfApiKey?: string,
+  topK: number = 5
+): Promise<string[]> {
+  // 如果提供了 Hugging Face API key，優先嘗試向量檢索
+  if (hfApiKey && hfApiKey.trim()) {
+    try {
+      const queryEmbedding = await generateEmbeddingHF(query, hfApiKey);
+      const chunkScores: Array<{ chunk: string; score: number }> = [];
+
+      for (const chunk of documentChunks) {
+        try {
+          const chunkEmbedding = await generateEmbeddingHF(chunk, hfApiKey);
+          const similarity = cosineSimilarity(queryEmbedding, chunkEmbedding);
+          chunkScores.push({ chunk, score: similarity });
+        } catch (err) {
+          console.warn('Hugging Face chunk embedding 失敗，跳過該片段:', (err as Error).message);
+        }
+      }
+
+      if (chunkScores.length > 0) {
+        chunkScores.sort((a, b) => b.score - a.score);
+        const selected = chunkScores.slice(0, topK).map(item => item.chunk);
+        // 如果最高分為 0，代表沒有實質相似度，改用關鍵字匹配
+        if (selected.length > 0 && chunkScores[0].score > 0) {
+          return selected;
+        }
+      }
+    } catch (err) {
+      console.warn('Hugging Face RAG 檢索失敗，改用關鍵字匹配:', (err as Error).message);
+    }
+  }
+
+  // 後備：使用關鍵字匹配
+  return retrieveRelevantChunksByKeyword(query, documentChunks, topK);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { 
@@ -96,7 +210,8 @@ export async function POST(request: NextRequest) {
       budget, 
       preferences, 
       currency = 'TWD', 
-      userApiKey,
+      userApiKey, // Gemini 用於生成行程
+      hfApiKey,   // Hugging Face 用於 RAG 檢索（可選）
       documentChunks, // 從檔案上傳 API 獲得的文檔塊
       excludedPlaces 
     } = await request.json();
@@ -134,8 +249,8 @@ export async function POST(request: NextRequest) {
     // 構建查詢（用於 RAG 檢索）
     const query = `${destination} ${days}天 ${preferences || ''} 旅遊行程`;
     
-    // 檢索最相關的文檔片段（使用關鍵字匹配）
-    const relevantChunks = retrieveRelevantChunks(query, documentChunks, 5);
+    // 檢索最相關的文檔片段（優先使用 Hugging Face Embedding，失敗時回退到關鍵字匹配）
+    const relevantChunks = await retrieveRelevantChunks(query, documentChunks, hfApiKey, 5);
     
     const documentContext = relevantChunks.join('\n\n');
     

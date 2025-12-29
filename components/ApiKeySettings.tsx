@@ -8,10 +8,12 @@ export default function ApiKeySettings() {
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
   const [airLabsApiKey, setAirLabsApiKey] = useState('');
   const [serpApiKey, setSerpApiKey] = useState('');
+  const [hfApiKey, setHfApiKey] = useState('');
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showMapsKey, setShowMapsKey] = useState(false);
   const [showAirLabsKey, setShowAirLabsKey] = useState(false);
   const [showSerpApiKey, setShowSerpApiKey] = useState(false);
+  const [showHfApiKey, setShowHfApiKey] = useState(false);
   const [saved, setSaved] = useState(false);
 
   // 載入已保存的 API keys
@@ -21,10 +23,12 @@ export default function ApiKeySettings() {
       const savedMapsKey = localStorage.getItem('user_google_maps_api_key') || '';
       const savedAirLabsKey = localStorage.getItem('user_airlabs_api_key') || '';
       const savedSerpApiKey = localStorage.getItem('user_serpapi_api_key') || '';
+       const savedHfApiKey = localStorage.getItem('user_hf_api_key') || '';
       setGeminiApiKey(savedGeminiKey);
       setGoogleMapsApiKey(savedMapsKey);
       setAirLabsApiKey(savedAirLabsKey);
       setSerpApiKey(savedSerpApiKey);
+      setHfApiKey(savedHfApiKey);
     }
   }, []);
 
@@ -34,6 +38,7 @@ export default function ApiKeySettings() {
       localStorage.setItem('user_google_maps_api_key', googleMapsApiKey);
       localStorage.setItem('user_airlabs_api_key', airLabsApiKey);
       localStorage.setItem('user_serpapi_api_key', serpApiKey);
+      localStorage.setItem('user_hf_api_key', hfApiKey);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       
@@ -218,6 +223,46 @@ export default function ApiKeySettings() {
           </p>
         </div>
 
+        <div>
+          <label className="block text-xs mb-2">
+            Hugging Face API Token
+            <span className="text-[10px] opacity-70 ml-2">
+              (用於 RAG 編排行程的文字向量檢索)
+            </span>
+          </label>
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <input
+                type={showHfApiKey ? 'text' : 'password'}
+                value={hfApiKey}
+                onChange={(e) => setHfApiKey(e.target.value)}
+                placeholder="輸入您的 Hugging Face API Token"
+                className="pixel-input w-full px-3 py-2 text-sm pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowHfApiKey(!showHfApiKey)}
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+                title={showHfApiKey ? '隱藏' : '顯示'}
+              >
+                {showHfApiKey ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+          </div>
+          {hfApiKey && !showHfApiKey && (
+            <p className="text-[10px] opacity-70 mt-1">
+              已輸入: {maskApiKey(hfApiKey)}
+            </p>
+          )}
+          <p className="text-[10px] opacity-70 mt-1">
+            取得方式: <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" className="underline">Hugging Face Tokens</a>
+          </p>
+        </div>
+
         <button
           onClick={handleSave}
           className="pixel-button w-full py-3 text-sm"
@@ -232,6 +277,7 @@ export default function ApiKeySettings() {
           <p>• 使用地圖和地點自動完成功能前，必須先設定 Google Maps API Key</p>
           <p>• 使用航班查詢功能前，建議設定 AirLabs 或 SerpAPI API Key 以獲取實時航班信息</p>
           <p>• SerpAPI 提供延誤狀態和地圖路線顯示功能</p>
+          <p>• 使用「利用 RAG 技術編排行程」功能時，建議設定 Hugging Face API Token 以獲得更準確的文件檢索效果（未設定時會自動使用關鍵字匹配）</p>
         </div>
       </div>
     </div>

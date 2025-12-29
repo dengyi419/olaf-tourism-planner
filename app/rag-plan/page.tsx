@@ -106,7 +106,7 @@ export default function RAGPlanPage() {
       return;
     }
 
-    // 檢查是否有 API key
+    // 檢查是否有 Gemini API key（用於生成行程）
     const userApiKey = typeof window !== 'undefined' 
       ? localStorage.getItem('user_gemini_api_key') || ''
       : '';
@@ -115,6 +115,11 @@ export default function RAGPlanPage() {
       setError('請先前往「API 金鑰設定」頁面設定您的 Gemini API Key。\n\n點擊右上角「主選單」→「API 金鑰設定」');
       return;
     }
+
+    // Hugging Face API key（用於 RAG 檢索，可選）
+    const hfApiKey = typeof window !== 'undefined'
+      ? localStorage.getItem('user_hf_api_key') || ''
+      : '';
 
     setIsGenerating(true);
     setError('');
@@ -134,6 +139,7 @@ export default function RAGPlanPage() {
           excludedPlaces,
           documentChunks,
           userApiKey,
+          hfApiKey: hfApiKey || undefined,
         }),
       });
 
