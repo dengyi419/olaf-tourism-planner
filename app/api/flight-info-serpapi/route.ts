@@ -47,11 +47,12 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     // SerpAPI Google Flights API 端點
     // API 文檔：https://serpapi.com/google-flights-api
     // 注意：SerpAPI Google Flights 需要 departure_id 和 arrival_id（機場代碼）
-    // 不設置 type 參數，只設置 outbound_date 而不設置 return_date，默認為單程
+    // type: 1 = 來回程 (round trip), 2 = 單程 (one way)
     const baseUrl = 'https://serpapi.com/search.json';
     const params = new URLSearchParams({
       engine: 'google_flights',
       api_key: cleanedApiKey,
+      type: '2', // 2 = 單程 (one way)
     });
     
     // 如果提供了出發地和目的地機場代碼，使用它們
