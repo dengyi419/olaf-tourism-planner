@@ -332,8 +332,8 @@ export default function PlanPage() {
     <div className="min-h-screen bg-[#f5f5dc]">
       <BudgetHeader />
       
-      {/* 右上角時鐘和按鈕 - 調整 z-index 和位置避免被狀態列擋住 */}
-      <div className="fixed top-24 right-4 flex gap-3 z-40 flex-wrap justify-end max-w-[calc(100vw-2rem)]">
+      {/* 右上角時鐘和按鈕 - 固定在狀態列下方 */}
+      <div className="fixed top-[100px] right-2 sm:right-4 flex gap-2 sm:gap-3 z-40 flex-wrap justify-end max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2rem)]">
         <Clock />
         <button
           onClick={() => router.push('/')}
