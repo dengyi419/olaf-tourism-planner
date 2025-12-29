@@ -40,34 +40,29 @@ export default function Clock() {
     });
   };
 
-  // 獲取要顯示的日期（如果有行程，顯示行程開始日期；否則顯示當前日期）
+  // 獲取要顯示的日期（永遠顯示最近的未來行程開始日期；否則顯示當前日期）
   const getDisplayDate = () => {
-    // 優先使用當前行程的開始日期
-    if (tripSettings?.startDate && itinerary.length > 0) {
-      const startDate = new Date(tripSettings.startDate);
-      if (!isNaN(startDate.getTime())) {
-        return startDate;
-      }
-    }
+    const today = new Date().toISOString().split('T')[0];
     
-    // 如果沒有當前行程，從所有行程中找最近的開始日期
+    // 從所有行程中找最近的未來開始日期（包括當前行程）
     const allTrips = currentTrip ? [currentTrip, ...savedTrips] : savedTrips;
-    const tripsWithStartDate = allTrips
+    const futureTrips = allTrips
       .filter(trip => trip.settings?.startDate)
       .map(trip => ({
         id: trip.id,
         startDate: trip.settings!.startDate!,
       }))
-      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+      .filter(trip => trip.startDate > today) // 嚴格大於今天（不含今天）
+      .sort((a, b) => a.startDate.localeCompare(b.startDate)); // 按日期排序，最近的在前
     
-    if (tripsWithStartDate.length > 0) {
-      const nearestStartDate = new Date(tripsWithStartDate[0].startDate);
+    if (futureTrips.length > 0) {
+      const nearestStartDate = new Date(futureTrips[0].startDate);
       if (!isNaN(nearestStartDate.getTime())) {
         return nearestStartDate;
       }
     }
     
-    // 如果沒有行程，返回當前日期
+    // 如果沒有未來行程，返回當前日期
     return time || new Date();
   };
 
