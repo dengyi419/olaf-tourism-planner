@@ -61,16 +61,19 @@ async function queryAirLabs(flightNumber: string, apiKey: string, flightDate?: s
     
     // AirLabs API 端點
     // API 文檔：https://airlabs.co/docs/
+    // 注意：AirLabs API 目前不支持日期參數，會返回 "Date is not supported (for now)" 錯誤
+    // 因此我們不發送日期參數，只查詢當前/實時的航班信息
     const baseUrl = 'https://airlabs.co/api/v9/flight';
     const params = new URLSearchParams({
       api_key: cleanedApiKey,
       flight_iata: flightNumber,
     });
     
-    // 如果提供了日期，添加到查詢參數中
-    if (flightDate) {
-      params.append('date', flightDate);
-    }
+    // AirLabs API 目前不支持日期參數，所以不添加日期
+    // 如果未來支持，可以取消下面的註釋
+    // if (flightDate) {
+    //   params.append('date', flightDate);
+    // }
     
     // 記錄請求參數（不記錄完整的 API Key，只記錄長度和前幾個字符）
     console.log('AirLabs API 請求:', {
