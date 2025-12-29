@@ -51,7 +51,7 @@ const translations: Record<Language, Record<string, string>> = {
     'flight.apiAirLabs': 'AirLabs',
     'flight.apiSerpAPI': 'SerpAPI (含延誤資訊)',
     'flight.dateNote': '注意：AirLabs API 目前不支持日期參數，將查詢實時航班資訊',
-    'flight.dateNoteSerpAPI': 'SerpAPI 支持日期查詢，將查詢指定日期的航班資訊（實時狀態來自 AirLabs，僅顯示當天數據）',
+    'flight.dateNoteSerpAPI': '只能查詢今天及以後的航班資訊',
     'flight.dateWarning': '您選擇的是未來日期（{date}），實時狀態資訊僅顯示當天數據',
     'flight.dateWarningPast': '您選擇的是過去日期（{date}），實時狀態資訊僅顯示當天數據',
     'flight.transportCost': '交通費用',

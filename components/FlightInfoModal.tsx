@@ -52,17 +52,15 @@ interface FlightInfo {
 export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProps) {
   const language = useLanguageStore((state) => state.language);
   const [flightNumber, setFlightNumber] = useState('');
-  // 計算最小日期（前兩天）
+  // 計算最小日期（今天）
   const getMinDate = () => {
     const date = new Date();
-    date.setDate(date.getDate() - 2);
     return date.toISOString().split('T')[0];
   };
   const [flightDate, setFlightDate] = useState(new Date().toISOString().split('T')[0]); // 預設為今天
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [flightInfo, setFlightInfo] = useState<FlightInfo | null>(null);
-  const [useSerpAPI, setUseSerpAPI] = useState(false); // 選擇使用 SerpAPI 還是 AirLabs
 
   const handleSearch = async () => {
     if (!flightNumber.trim()) {
@@ -75,20 +73,17 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
     setFlightInfo(null);
 
     try {
-      // 根據選擇的 API 獲取對應的 API key
-      const apiKeyName = useSerpAPI ? 'user_serpapi_api_key' : 'user_airlabs_api_key';
-      const userApiKey = typeof window !== 'undefined' 
-        ? localStorage.getItem(apiKeyName) || ''
+      // 統一使用 SerpAPI，優先查詢 SerpAPI，如果沒有結果再回退到 AirLabs
+      const serpApiKey = typeof window !== 'undefined' 
+        ? localStorage.getItem('user_serpapi_api_key') || ''
         : '';
       
-      // 如果使用 SerpAPI，也需要 AirLabs API Key 來獲取機場代碼
-      const airLabsApiKey = useSerpAPI && typeof window !== 'undefined'
+      // 需要 AirLabs API Key 來獲取機場代碼（SerpAPI 需要）
+      const airLabsApiKey = typeof window !== 'undefined'
         ? localStorage.getItem('user_airlabs_api_key') || ''
         : undefined;
 
-      const apiEndpoint = useSerpAPI ? '/api/flight-info-serpapi' : '/api/flight-info';
-
-      const response = await fetch(apiEndpoint, {
+      const response = await fetch('/api/flight-info-serpapi', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +91,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
         body: JSON.stringify({ 
           flightNumber: flightNumber.trim().toUpperCase(),
           flightDate: flightDate || undefined, // 傳遞日期參數
-          userApiKey: userApiKey || undefined,
+          userApiKey: serpApiKey || undefined,
           airLabsApiKey: airLabsApiKey || undefined, // SerpAPI 需要 AirLabs 來獲取機場代碼
         }),
       });
@@ -163,33 +158,10 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
               value={flightDate}
               onChange={(e) => setFlightDate(e.target.value)}
               className="pixel-input w-full px-4 py-2"
-              min={getMinDate()} // 可以選擇前兩天
+              min={getMinDate()} // 只能選擇今天及以後
             />
             <p className="text-[10px] opacity-70 mt-1">
-              {useSerpAPI 
-                ? t('flight.dateNoteSerpAPI')
-                : t('flight.dateNote')}
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-xs mb-2">{t('flight.apiSelect')}</label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setUseSerpAPI(false)}
-                className={`pixel-button flex-1 py-2 text-xs ${!useSerpAPI ? 'bg-blue-200' : ''}`}
-              >
-                {t('flight.apiAirLabs')}
-              </button>
-              <button
-                onClick={() => setUseSerpAPI(true)}
-                className={`pixel-button flex-1 py-2 text-xs ${useSerpAPI ? 'bg-blue-200' : ''}`}
-              >
-                {t('flight.apiSerpAPI')}
-              </button>
-            </div>
-            <p className="text-[10px] opacity-70 mt-1">
-              {t('flight.serpapiNote')}
+              {t('flight.dateNoteSerpAPI')}
             </p>
           </div>
 
@@ -383,8 +355,8 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                 )}
               </div>
 
-              {/* Google Maps 路線圖（僅在使用 SerpAPI 時顯示） */}
-              {useSerpAPI && flightInfo.departure.airport && flightInfo.arrival.airport && (
+              {/* Google Maps 路線圖 */}
+              {flightInfo.departure.airport && flightInfo.arrival.airport && (
                 <div className="pixel-card p-4 border-2 border-black">
                   <h4 className="text-xs font-bold mb-2">{t('flight.routeMap')}</h4>
                   <FlightRouteMap

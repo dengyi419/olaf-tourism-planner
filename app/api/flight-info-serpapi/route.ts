@@ -190,42 +190,89 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       const airlineCode = flight.airline_code || '';
       const flightNum = flight.flight_number || flightNumber;
       
-      // 提取行李資訊（如果 SerpAPI 提供）
-      // SerpAPI 可能在不同字段中提供行李資訊
-      const baggagePrices = flight.baggage_prices || flight.baggage || [];
+      // 提取行李資訊（根據 SerpAPI 文檔，使用 included_baggage 欄位）
       const baggageInfo: any = {};
       
-      // 處理行李價格數組
-      if (Array.isArray(baggagePrices) && baggagePrices.length > 0) {
-        baggageInfo.baggageAllowance = baggagePrices.map((p: any) => {
-          if (typeof p === 'string') return p;
-          return p.text || p.label || JSON.stringify(p);
-        }).join(', ');
+      // 優先使用 included_baggage 欄位（SerpAPI 標準欄位）
+      if (flight.included_baggage) {
+        const includedBaggage = flight.included_baggage;
         
-        const carryOnItem = baggagePrices.find((p: any) => {
-          const text = (typeof p === 'string' ? p : p.text || p.label || '').toLowerCase();
-          return text.includes('carry-on') || text.includes('carryon') || text.includes('hand');
-        });
-        baggageInfo.carryOn = carryOnItem ? (typeof carryOnItem === 'string' ? carryOnItem : carryOnItem.text || carryOnItem.label) : undefined;
-        
-        const checkedItem = baggagePrices.find((p: any) => {
-          const text = (typeof p === 'string' ? p : p.text || p.label || '').toLowerCase();
-          return !text.includes('carry-on') && !text.includes('carryon') && !text.includes('hand');
-        });
-        baggageInfo.checkedBaggage = checkedItem ? (typeof checkedItem === 'string' ? checkedItem : checkedItem.text || checkedItem.label) : undefined;
+        // included_baggage 可能是字符串或對象
+        if (typeof includedBaggage === 'string') {
+          baggageInfo.baggageAllowance = includedBaggage;
+          // 嘗試從字符串中提取隨身行李和託運行李
+          const lowerText = includedBaggage.toLowerCase();
+          if (lowerText.includes('carry-on') || lowerText.includes('carryon') || lowerText.includes('hand')) {
+            baggageInfo.carryOn = includedBaggage;
+          }
+          if (lowerText.includes('checked') || lowerText.includes('baggage') || lowerText.includes('luggage')) {
+            baggageInfo.checkedBaggage = includedBaggage;
+          }
+        } else if (typeof includedBaggage === 'object') {
+          // 如果是對象，提取各個字段
+          baggageInfo.baggageAllowance = includedBaggage.text || includedBaggage.label || JSON.stringify(includedBaggage);
+          baggageInfo.carryOn = includedBaggage.carry_on || includedBaggage.carryOn;
+          baggageInfo.checkedBaggage = includedBaggage.checked || includedBaggage.checkedBaggage;
+        }
       }
       
-      // 如果沒有行李資訊，嘗試從其他字段獲取
+      // 如果沒有 included_baggage，嘗試其他字段作為後備
+      if (!baggageInfo.baggageAllowance) {
+        const baggagePrices = flight.baggage_prices || flight.baggage || [];
+        if (Array.isArray(baggagePrices) && baggagePrices.length > 0) {
+          baggageInfo.baggageAllowance = baggagePrices.map((p: any) => {
+            if (typeof p === 'string') return p;
+            return p.text || p.label || JSON.stringify(p);
+          }).join(', ');
+          
+          const carryOnItem = baggagePrices.find((p: any) => {
+            const text = (typeof p === 'string' ? p : p.text || p.label || '').toLowerCase();
+            return text.includes('carry-on') || text.includes('carryon') || text.includes('hand');
+          });
+          baggageInfo.carryOn = carryOnItem ? (typeof carryOnItem === 'string' ? carryOnItem : carryOnItem.text || carryOnItem.label) : undefined;
+          
+          const checkedItem = baggagePrices.find((p: any) => {
+            const text = (typeof p === 'string' ? p : p.text || p.label || '').toLowerCase();
+            return !text.includes('carry-on') && !text.includes('carryon') && !text.includes('hand');
+          });
+          baggageInfo.checkedBaggage = checkedItem ? (typeof checkedItem === 'string' ? checkedItem : checkedItem.text || checkedItem.label) : undefined;
+        }
+      }
+      
+      // 如果還是沒有，嘗試 baggage_allowance 字段
       if (!baggageInfo.baggageAllowance && flight.baggage_allowance) {
         baggageInfo.baggageAllowance = flight.baggage_allowance;
       }
       
-      // 提取飛機型號資訊
-      const aircraft = flight.aircraft || flight.plane || {};
-      const aircraftInfo = aircraft.code || aircraft.icao || aircraft.iata || aircraft.name ? {
-        code: aircraft.code || aircraft.icao || aircraft.iata,
-        name: aircraft.name || aircraft.model || undefined,
-      } : undefined;
+      // 提取飛機型號資訊（根據 SerpAPI 文檔，使用 aircraft 欄位）
+      // aircraft 欄位可能是字符串（如 "Boeing 787"）或對象
+      let aircraftInfo: any = undefined;
+      
+      if (flight.aircraft) {
+        if (typeof flight.aircraft === 'string') {
+          // 如果是字符串，直接使用
+          aircraftInfo = {
+            name: flight.aircraft,
+          };
+        } else if (typeof flight.aircraft === 'object') {
+          // 如果是對象，提取各個字段
+          aircraftInfo = {
+            code: flight.aircraft.code || flight.aircraft.icao || flight.aircraft.iata,
+            name: flight.aircraft.name || flight.aircraft.model || flight.aircraft.type,
+          };
+        }
+      }
+      
+      // 如果沒有 aircraft 欄位，嘗試其他字段作為後備
+      if (!aircraftInfo) {
+        const aircraft = flight.plane || {};
+        if (aircraft.code || aircraft.icao || aircraft.iata || aircraft.name) {
+          aircraftInfo = {
+            code: aircraft.code || aircraft.icao || aircraft.iata,
+            name: aircraft.name || aircraft.model || undefined,
+          };
+        }
+      }
       
       return {
         flightNumber: `${airlineCode}${flightNum}` || flightNumber,
