@@ -370,7 +370,7 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       }
       
       // 提取 extensions 資訊（行李、Wi-Fi等）- 從 leg 中提取
-      const extensions = leg.extensions || flight.extensions || [];
+      const extensions = leg.extensions || [];
       const extensionsText = Array.isArray(extensions) 
         ? extensions.map((ext: any) => typeof ext === 'string' ? ext : ext.text || ext.label || '').filter(Boolean).join(', ')
         : '';
