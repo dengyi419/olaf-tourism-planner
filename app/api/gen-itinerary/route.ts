@@ -151,7 +151,7 @@ ${GEMINI_SYSTEM_PROMPT}
           // 如果有圖片，使用視覺模型
           const imagePart = {
             inlineData: {
-              data: imageBase64.split(',')[1] || imageBase64, // 移除 data:image/...;base64, 前綴
+              data: cleanedBase64, // 使用清理後的 base64 數據
               mimeType: imageBase64.startsWith('data:image/') 
                 ? imageBase64.split(';')[0].split(':')[1] 
                 : 'image/jpeg',
