@@ -138,7 +138,8 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     
     // 處理 SerpAPI 返回的數據
     // SerpAPI Google Flights 返回的結構可能包含 best_flights, other_flights, flights 等
-    // 也可能直接包含航班資訊
+    // 也可能直接包含單個 flight_info
+    // 這裡將所有可能的選項合併後，再在其中尋找特定航班（例如 CI104）
     let flights: any[] = [];
     
     // 根據 SerpAPI 文檔，航班數據可能在以下位置：
@@ -146,14 +147,17 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     // 2. other_flights - 其他航班選項
     // 3. flights - 所有航班
     // 4. flight_info - 單個航班資訊
-    if (data.best_flights && Array.isArray(data.best_flights) && data.best_flights.length > 0) {
-      flights = data.best_flights;
-    } else if (data.other_flights && Array.isArray(data.other_flights) && data.other_flights.length > 0) {
-      flights = data.other_flights;
-    } else if (data.flights && Array.isArray(data.flights) && data.flights.length > 0) {
-      flights = data.flights;
-    } else if (data.flight_info) {
-      // 如果返回的是單個航班資訊
+    if (data.best_flights && Array.isArray(data.best_flights)) {
+      flights.push(...data.best_flights);
+    }
+    if (data.other_flights && Array.isArray(data.other_flights)) {
+      flights.push(...data.other_flights);
+    }
+    if (data.flights && Array.isArray(data.flights)) {
+      flights.push(...data.flights);
+    }
+    if ((!flights || flights.length === 0) && data.flight_info) {
+      // 如果只有單個航班資訊
       flights = [data.flight_info];
     }
     
