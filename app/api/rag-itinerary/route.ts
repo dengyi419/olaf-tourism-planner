@@ -17,7 +17,7 @@ const GEMINI_SYSTEM_PROMPT = `
           "locationName": "地點名稱",
           "description": "20字內的簡短推薦理由與活動描述",
           "googleMapQuery": "地點名稱+城市 (用於搜尋)",
-          "cost": 500,
+          "estimatedCost": 500,
           "category": "food"
         }
       ]
@@ -331,11 +331,11 @@ ${GEMINI_SYSTEM_PROMPT}
     parsedData.itinerary = parsedData.itinerary.map((day, index) => ({
       ...day,
       dayId: day.dayId || index + 1,
-      activities: (day.activities || []).map((activity, actIndex) => ({
+      activities: (day.activities || []).map((activity: any, actIndex) => ({
         ...activity,
         id: activity.id || `activity-${Date.now()}-${actIndex}`,
-        cost: activity.cost || activity.estimatedCost || 0,
-        estimatedCost: activity.estimatedCost || activity.cost || 0,
+        estimatedCost: activity.estimatedCost || activity.cost || 0, // 處理可能的 cost 字段
+        actualCost: activity.actualCost || 0,
       })),
     }));
 
