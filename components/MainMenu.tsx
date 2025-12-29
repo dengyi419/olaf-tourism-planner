@@ -286,7 +286,7 @@ export default function MainMenu() {
               className="pixel-button w-full py-6 text-sm"
             >
               <Plane className="w-4 h-4 inline mr-2" />
-              查詢航班信息
+              查詢航班資訊
             </button>
 
             <button

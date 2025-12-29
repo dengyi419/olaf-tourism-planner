@@ -160,11 +160,11 @@ export default function ManualPage() {
               </div>
             </div>
 
-            {/* 5. 查詢航班信息 */}
+            {/* 5. 查詢航班資訊 */}
             <div className="border-t-2 border-black pt-6">
               <div className="flex items-center gap-2 mb-3">
                 <Plane className="w-5 h-5" />
-                <h3 className="text-lg font-bold">查詢航班信息</h3>
+                <h3 className="text-lg font-bold">查詢航班資訊</h3>
               </div>
               <div className="pl-7 space-y-2 text-sm">
                 <p><strong>功能說明：</strong>查詢航班的詳細資訊，包括出發/抵達時間、延誤狀態、登機門、行李轉盤等。</p>

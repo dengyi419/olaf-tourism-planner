@@ -9,7 +9,7 @@ interface SavedTrip {
   itinerary: DayItinerary[];
   createdAt: string;
   updatedAt: string;
-  user_email?: string; // 可選字段，用於驗證數據歸屬
+  user_email?: string; // 可選字段，用於驗證資料歸屬
 }
 
 interface StorageState {
@@ -251,7 +251,7 @@ export const useStorageStore = create<StorageState>()(
             }
           }
           
-          // 立即清除不屬於當前用戶的本地數據
+          // 立即清除不屬於當前用戶的本地資料
           const state = get();
           const filteredLocalTrips = state.savedTrips.filter((trip: any) => {
             if (trip.user_email && trip.user_email !== userEmail) {
@@ -261,7 +261,7 @@ export const useStorageStore = create<StorageState>()(
             return true;
           });
           
-          // 如果過濾後的數據不同，立即更新
+          // 如果過濾後的資料不同，立即更新
           if (filteredLocalTrips.length !== state.savedTrips.length) {
             console.log('清除', state.savedTrips.length - filteredLocalTrips.length, '個不屬於當前用戶的行程');
             set({ savedTrips: filteredLocalTrips });

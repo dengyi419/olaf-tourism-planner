@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// 模擬航班數據庫（作為後備數據）
+// 模擬航班資料庫（作為後備資料）
 const FLIGHT_DATABASE: Record<string, any> = {
-  // 示例數據
+  // 示例資料
   'CI100': {
     flightNumber: 'CI100',
     departure: {
@@ -62,7 +62,7 @@ async function queryAirLabs(flightNumber: string, apiKey: string, flightDate?: s
     // AirLabs API 端點
     // API 文檔：https://airlabs.co/docs/
     // 注意：AirLabs API 目前不支持日期參數，會返回 "Date is not supported (for now)" 錯誤
-    // 因此我們不發送日期參數，只查詢當前/實時的航班信息
+    // 因此我們不發送日期參數，只查詢當前/實時的航班資訊
     const baseUrl = 'https://airlabs.co/api/v9/flight';
     const params = new URLSearchParams({
       api_key: cleanedApiKey,
