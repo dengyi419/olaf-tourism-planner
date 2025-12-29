@@ -111,6 +111,11 @@ const translations: Record<Language, Record<string, string>> = {
     'flight.errorNoFlightNumber': 'Please enter flight number',
     'flight.errorQueryFailed': 'Failed to query flight information',
     'flight.errorOccurred': 'An error occurred while querying flight information',
+    'flight.placeholder': 'e.g., CI100, BR101, JX123',
+    'flight.serpapiNote': 'SerpAPI provides delay status and route map display',
+    'flight.delayed': 'Flight delayed {minutes} minutes',
+    'flight.checkInNote': 'Note: Check-in counter information is subject to airport announcements',
+    'flight.infoDisclaimer': 'Note: Flight information may change due to actual circumstances, please refer to airport announcements.',
   },
   'ja': {
     'mainMenu.title': 'OLAF TOURISM PLANNER',
