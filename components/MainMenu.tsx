@@ -7,12 +7,13 @@ import Clock from './Clock';
 import TripList from './TripList';
 import LanguageSelector from './LanguageSelector';
 import UserMenu from './UserMenu';
-import { Settings, Menu, X, Camera, FileText } from 'lucide-react';
+import { Settings, Menu, X, Camera, FileText, Plane } from 'lucide-react';
 import { useLanguageStore, t } from '@/store/useLanguageStore';
 import { useStorageStore } from '@/store/useStorageStore';
 import { useTravelStore } from '@/store/useTravelStore';
 import CurrentTripModal from './CurrentTripModal';
 import CameraTranslateModal from './CameraTranslateModal';
+import FlightInfoModal from './FlightInfoModal';
 
 export default function MainMenu() {
   const router = useRouter();
