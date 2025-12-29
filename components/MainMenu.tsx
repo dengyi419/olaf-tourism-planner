@@ -7,7 +7,7 @@ import Clock from './Clock';
 import TripList from './TripList';
 import LanguageSelector from './LanguageSelector';
 import UserMenu from './UserMenu';
-import { Settings, Menu, X, Camera, FileText, Plane } from 'lucide-react';
+import { Settings, Menu, X, Camera, FileText, Plane, Sparkles } from 'lucide-react';
 import { useLanguageStore, t } from '@/store/useLanguageStore';
 import { useStorageStore } from '@/store/useStorageStore';
 import { useTravelStore } from '@/store/useTravelStore';
@@ -284,6 +284,14 @@ export default function MainMenu() {
             >
               <Plane className="w-4 h-4 inline mr-2" />
               5. 查詢航班信息
+            </button>
+
+            <button
+              onClick={() => router.push('/rag-plan')}
+              className="pixel-button w-full py-6 text-sm"
+            >
+              <Sparkles className="w-4 h-4 inline mr-2" />
+              6. 利用RAG技術編排行程
             </button>
           </div>
         </div>
