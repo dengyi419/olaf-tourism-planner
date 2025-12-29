@@ -123,13 +123,6 @@ export default function HistoryPage() {
                 {isSaving ? '儲存中...' : '儲存'}
               </button>
             )}
-            <button
-              onClick={() => router.push('/')}
-              className="pixel-button px-3 py-1.5 text-xs"
-            >
-              <Home className="w-3 h-3 inline mr-1" />
-              主選單
-            </button>
           </>
         }
       />
@@ -139,7 +132,16 @@ export default function HistoryPage() {
           {/* 左側：行程列表 */}
           <div className="lg:col-span-1">
             <div className="pixel-card p-4 mb-4">
-              <h2 className="text-lg mb-4">行程記錄</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg">行程記錄</h2>
+                <button
+                  onClick={() => router.push('/')}
+                  className="pixel-button px-3 py-1.5 text-xs lg:hidden"
+                >
+                  <Home className="w-3 h-3 inline mr-1" />
+                  主選單
+                </button>
+              </div>
               {savedTrips.length === 0 ? (
                 <p className="text-xs text-gray-600">還沒有儲存的行程</p>
               ) : (
