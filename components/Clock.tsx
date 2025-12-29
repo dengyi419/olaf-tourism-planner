@@ -146,18 +146,27 @@ export default function Clock() {
 
   const displayDate = getDisplayDate();
 
+  const today = time || new Date();
+  const todayDateStr = today.toISOString().split('T')[0];
+  const displayDateStr = displayDate.toISOString().split('T')[0];
+
   return (
     <div className="pixel-card p-3 bg-white">
       <div className="text-xs text-center" style={{ fontFamily: "'Press Start 2P', monospace", lineHeight: '1.6' }}>
         <div className="mb-1" suppressHydrationWarning>
           {time && formatTime(time)}
         </div>
-        <div className="text-[8px]" suppressHydrationWarning>
-          {formatDate(displayDate)}
-          {tripSettings?.startDate && displayDate.toISOString().split('T')[0] !== new Date().toISOString().split('T')[0] && (
-            <span className="ml-1 text-[6px] text-gray-500">(行程開始日)</span>
-          )}
+        {/* 今天日期 - 較大字體 */}
+        <div className="text-[10px] mb-1" suppressHydrationWarning>
+          {formatDate(today)}
         </div>
+        {/* 行程日期 - 較小字體 */}
+        {tripSettings?.startDate && displayDateStr !== todayDateStr && (
+          <div className="text-[8px] text-gray-600 mb-1" suppressHydrationWarning>
+            {formatDate(displayDate)}
+            <span className="ml-1 text-[6px] text-gray-500">(行程開始日)</span>
+          </div>
+        )}
         {countdown && (
           <div className="mt-2 pt-2 border-t-2 border-black">
             <div className="flex items-center justify-center gap-1 mb-1">
@@ -169,11 +178,8 @@ export default function Clock() {
                 {countdown.tripName}
               </div>
             )}
-            <div className="text-[10px] text-blue-600 font-bold mb-1">
+            <div className="text-[10px] text-blue-600 font-bold">
               {countdown.days}天 {countdown.hours}小時
-            </div>
-            <div className="text-[6px] text-gray-500">
-              今天：{time && formatDate(time)}
             </div>
           </div>
         )}
