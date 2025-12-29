@@ -39,9 +39,9 @@ export default function PlanPage() {
   useEffect(() => {
     if (tripSettings && itinerary.length > 0) {
       updateCurrentTrip(tripSettings, itinerary);
-      // 同時更新 currentTrip 的名稱
+      // 同時更新 currentTrip 的名稱（優先使用 tripName，然後是 currentTrip.name，最後才是默認值）
       const currentTrip = useStorageStore.getState().currentTrip;
-      const name = tripName.trim() || currentTrip?.name || `行程 ${new Date().toLocaleDateString('zh-TW')}`;
+      const name = tripName.trim() || currentTrip?.name || tripSettings.destination || '我的行程';
       if (currentTrip && currentTrip.name !== name) {
         useStorageStore.setState({
           currentTrip: {
@@ -466,7 +466,7 @@ export default function PlanPage() {
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                     className="pixel-input w-full px-4 py-2"
-                    min={new Date().toISOString().split('T')[0]}
+                    // 移除 min 限制，允許選擇過去的日期
                   />
                 </div>
 
@@ -585,33 +585,35 @@ export default function PlanPage() {
               {tripSettings?.startDate && (
                 <div className="mt-2 flex items-center gap-2">
                   <label className="text-xs whitespace-nowrap">開始日期：</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => {
-                      const newStartDate = e.target.value;
-                      setStartDate(newStartDate);
-                      // 更新 tripSettings 中的 startDate
-                      const updatedSettings = {
-                        ...tripSettings,
-                        startDate: newStartDate,
-                      };
-                      setTripSettings(updatedSettings);
-                      // 更新所有行程的日期
-                      const updatedItinerary = itinerary.map((day, index) => {
-                        const dayDate = new Date(newStartDate);
-                        dayDate.setDate(dayDate.getDate() + index);
-                        return {
-                          ...day,
-                          date: dayDate.toISOString().split('T')[0],
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => {
+                        const newStartDate = e.target.value;
+                        setStartDate(newStartDate);
+                        // 更新 tripSettings 中的 startDate
+                        const updatedSettings = {
+                          ...tripSettings,
+                          startDate: newStartDate,
                         };
-                      });
-                      setItinerary(updatedItinerary);
-                      // 自動保存
-                      updateCurrentTrip(updatedSettings, updatedItinerary);
-                    }}
-                    className="pixel-input px-2 py-1 text-xs"
-                  />
+                        setTripSettings(updatedSettings);
+                        // 更新所有行程的日期和 dayId（重新編號）
+                        const updatedItinerary = itinerary.map((day, index) => {
+                          const dayDate = new Date(newStartDate);
+                          dayDate.setDate(dayDate.getDate() + index);
+                          return {
+                            ...day,
+                            dayId: index + 1, // 重新編號，確保連續
+                            date: dayDate.toISOString().split('T')[0],
+                          };
+                        });
+                        setItinerary(updatedItinerary);
+                        // 自動保存
+                        updateCurrentTrip(updatedSettings, updatedItinerary);
+                      }}
+                      className="pixel-input px-2 py-1 text-xs"
+                      // 移除 min 限制，允許選擇過去的日期
+                    />
                 </div>
               )}
               <div className="flex gap-3">

@@ -74,9 +74,27 @@ export const useTravelStore = create<TravelState>((set, get) => ({
     )
   })),
 
-  deleteDay: (dayId) => set((state) => ({
-    itinerary: state.itinerary.filter((day) => day.dayId !== dayId)
-  })),
+  deleteDay: (dayId) => set((state) => {
+    // 過濾掉要刪除的天
+    const filteredItinerary = state.itinerary.filter((day) => day.dayId !== dayId);
+    
+    // 重新計算 dayId 和日期，確保連續且從 1 開始
+    const baseDate = state.tripSettings?.startDate 
+      ? new Date(state.tripSettings.startDate)
+      : new Date();
+    
+    const updatedItinerary = filteredItinerary.map((day, index) => {
+      const dayDate = new Date(baseDate);
+      dayDate.setDate(dayDate.getDate() + index);
+      return {
+        ...day,
+        dayId: index + 1, // 重新編號，從 1 開始
+        date: dayDate.toISOString().split('T')[0], // 重新計算日期
+      };
+    });
+    
+    return { itinerary: updatedItinerary };
+  }),
 
   getTotalSpent: () => {
     const state = get();
