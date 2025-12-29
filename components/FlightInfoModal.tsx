@@ -205,29 +205,6 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                   )}
                 </div>
 
-                {/* 日期提示 */}
-                {useSerpAPI && flightDate && (() => {
-                  const selectedDate = new Date(flightDate);
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  selectedDate.setHours(0, 0, 0, 0);
-                  const isFutureDate = selectedDate.getTime() > today.getTime();
-                  const isPastDate = selectedDate.getTime() < today.getTime();
-                  
-                  if (isFutureDate || isPastDate) {
-                    return (
-                      <div className="mb-3 p-2 bg-yellow-100 border-2 border-yellow-500 rounded flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-yellow-600" />
-                        <span className="text-xs text-yellow-800">
-                          {isFutureDate 
-                            ? t('flight.dateWarning').replace('{date}', flightDate)
-                            : t('flight.dateWarningPast').replace('{date}', flightDate)}
-                        </span>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
 
                 {/* 延誤警告 */}
                 {flightInfo.isDelayed && flightInfo.delayMinutes && (
