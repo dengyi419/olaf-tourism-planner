@@ -504,6 +504,15 @@ export async function POST(request: NextRequest) {
               const airLabsData = await airLabsResponse.json();
               if (airLabsData.response && airLabsData.response.flight_iata) {
                 airLabsFlightInfo = airLabsData.response;
+                // 記錄航廈資訊以便調試
+                console.log('AirLabs 航班資訊（航廈/登機門）:', {
+                  flightNumber: airLabsFlightInfo.flight_iata,
+                  dep_terminal: airLabsFlightInfo.dep_terminal,
+                  dep_gate: airLabsFlightInfo.dep_gate,
+                  arr_terminal: airLabsFlightInfo.arr_terminal,
+                  arr_gate: airLabsFlightInfo.arr_gate,
+                  arr_baggage: airLabsFlightInfo.arr_baggage,
+                });
                 // 如果用戶選擇的日期不是今天，標記數據為實時數據
                 if (flightDate) {
                   const selectedDate = new Date(flightDate);
@@ -688,20 +697,22 @@ export async function POST(request: NextRequest) {
               // 優先使用 SerpAPI 的機場代碼，如果沒有再使用 AirLabs
               airport: serpApiFlightInfo.departure.airport || airLabsFlightInfo.dep_iata || '',
               city: serpApiFlightInfo.departure.city || airLabsFlightInfo.dep_city || airLabsFlightInfo.dep_name || '',
-              // 登機門和航廈僅限今天使用 AirLabs 的實時數據
-              terminal: (isToday ? airLabsFlightInfo.dep_terminal : undefined) || serpApiFlightInfo.departure.terminal,
-              gate: (isToday ? airLabsFlightInfo.dep_gate : undefined) || serpApiFlightInfo.departure.gate,
+              // 登機門和航廈：今天優先使用 AirLabs 的實時數據，否則使用 SerpAPI（如果有的話）
+              terminal: (isToday && airLabsFlightInfo.dep_terminal) ? airLabsFlightInfo.dep_terminal : (serpApiFlightInfo.departure.terminal || undefined),
+              gate: (isToday && airLabsFlightInfo.dep_gate) ? airLabsFlightInfo.dep_gate : (serpApiFlightInfo.departure.gate || undefined),
+              // 報到櫃檯：AirLabs 通常不提供，但如果有其他來源可以補充
+              checkInCounter: serpApiFlightInfo.departure.checkInCounter || undefined,
             },
             arrival: {
               ...serpApiFlightInfo.arrival,
               // 優先使用 SerpAPI 的機場代碼，如果沒有再使用 AirLabs
               airport: serpApiFlightInfo.arrival.airport || airLabsFlightInfo.arr_iata || '',
               city: serpApiFlightInfo.arrival.city || airLabsFlightInfo.arr_city || airLabsFlightInfo.arr_name || '',
-              // 登機門和航廈僅限今天使用 AirLabs 的實時數據
-              terminal: (isToday ? airLabsFlightInfo.arr_terminal : undefined) || serpApiFlightInfo.arrival.terminal,
-              gate: (isToday ? airLabsFlightInfo.arr_gate : undefined) || serpApiFlightInfo.arrival.gate,
-              // 行李轉盤僅限今天使用 AirLabs 的實時數據
-              baggageClaim: (isToday ? airLabsFlightInfo.arr_baggage : undefined) || serpApiFlightInfo.arrival.baggageClaim,
+              // 登機門和航廈：今天優先使用 AirLabs 的實時數據，否則使用 SerpAPI（如果有的話）
+              terminal: (isToday && airLabsFlightInfo.arr_terminal) ? airLabsFlightInfo.arr_terminal : (serpApiFlightInfo.arrival.terminal || undefined),
+              gate: (isToday && airLabsFlightInfo.arr_gate) ? airLabsFlightInfo.arr_gate : (serpApiFlightInfo.arrival.gate || undefined),
+              // 行李轉盤：今天優先使用 AirLabs 的實時數據，否則使用 SerpAPI（如果有的話）
+              baggageClaim: (isToday && airLabsFlightInfo.arr_baggage) ? airLabsFlightInfo.arr_baggage : (serpApiFlightInfo.arrival.baggageClaim || undefined),
             },
             status: (isToday && airLabsFlightInfo.status) ? airLabsFlightInfo.status : 
               (isDelayed ? `延誤 ${delayMinutes} 分鐘` : serpApiFlightInfo.status || '準時'),
