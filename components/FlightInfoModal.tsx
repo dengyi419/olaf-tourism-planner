@@ -61,7 +61,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
 
   const handleSearch = async () => {
     if (!flightNumber.trim()) {
-      setError('請輸入航班編號');
+      setError(t('flight.errorNoFlightNumber'));
       return;
     }
 
