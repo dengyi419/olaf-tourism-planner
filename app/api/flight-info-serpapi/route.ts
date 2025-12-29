@@ -408,11 +408,13 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
         baggageInfo: Object.keys(baggageInfo).length > 0 ? baggageInfo : undefined,
         // 飛機型號
         aircraft: aircraftInfo,
+        // Extensions 資訊（行李、Wi-Fi等）
+        extensions: extensionsText || undefined,
         // 額外資訊
         airline: airline,
-        duration: flight.duration, // 飛行時長（分鐘）
-        price: flight.price, // 價格
-        numberOfStops: flight.number_of_stops || 0, // 經停次數
+        duration: leg.duration || option.total_duration || flight.duration, // 飛行時長（分鐘）
+        price: option.price || flight.price, // 價格
+        numberOfStops: option.layovers?.length || flight.number_of_stops || 0, // 經停次數
         // 機場座標（用於地圖顯示，如果 API 提供）
         departureCoordinates: departure.coordinates || departure.lat_lng || undefined,
         arrivalCoordinates: arrival.coordinates || arrival.lat_lng || undefined,
