@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import Script from 'next/script'
 import GoogleMapsLoader from '@/components/GoogleMapsLoader'
@@ -11,6 +11,13 @@ export const metadata: Metadata = {
     icon: '/logo.png',
     apple: '/logo.png',
   },
+  themeColor: '#f5f5dc',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover', // 讓 iPhone 瀏海機種在全螢幕 / PWA 模式下正確處理安全區域
 }
 
 export default function RootLayout({
