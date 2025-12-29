@@ -141,11 +141,16 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     // 也可能直接包含航班資訊
     let flights: any[] = [];
     
-    if (data.best_flights && Array.isArray(data.best_flights)) {
+    // 根據 SerpAPI 文檔，航班數據可能在以下位置：
+    // 1. best_flights - 最佳航班選項
+    // 2. other_flights - 其他航班選項
+    // 3. flights - 所有航班
+    // 4. flight_info - 單個航班資訊
+    if (data.best_flights && Array.isArray(data.best_flights) && data.best_flights.length > 0) {
       flights = data.best_flights;
-    } else if (data.other_flights && Array.isArray(data.other_flights)) {
+    } else if (data.other_flights && Array.isArray(data.other_flights) && data.other_flights.length > 0) {
       flights = data.other_flights;
-    } else if (data.flights && Array.isArray(data.flights)) {
+    } else if (data.flights && Array.isArray(data.flights) && data.flights.length > 0) {
       flights = data.flights;
     } else if (data.flight_info) {
       // 如果返回的是單個航班資訊
@@ -160,6 +165,21 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       flightsLength: flights.length,
       dataKeys: Object.keys(data),
     });
+    
+    // 記錄完整的航班數據結構以便調試
+    if (flights.length > 0) {
+      const sampleFlight = flights[0];
+      console.log('SerpAPI 航班數據結構示例:', {
+        flightNumber: sampleFlight.flight_number,
+        aircraft: sampleFlight.aircraft,
+        included_baggage: sampleFlight.included_baggage,
+        baggage_prices: sampleFlight.baggage_prices,
+        baggage: sampleFlight.baggage,
+        departure_time: sampleFlight.departure_time,
+        arrival_time: sampleFlight.arrival_time,
+        allKeys: Object.keys(sampleFlight),
+      });
+    }
     
     if (flights.length > 0) {
       // 從 flights 數組中找到匹配的航班（根據航班編號）
