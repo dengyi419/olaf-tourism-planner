@@ -7,7 +7,7 @@ import Clock from './Clock';
 import TripList from './TripList';
 import LanguageSelector from './LanguageSelector';
 import UserMenu from './UserMenu';
-import { Settings, Menu, X, Camera, FileText, Plane, Sparkles } from 'lucide-react';
+import { Settings, Menu, X, Camera, FileText, Plane, Sparkles, Map, Wand2, History } from 'lucide-react';
 import { useLanguageStore, t } from '@/store/useLanguageStore';
 import { useStorageStore } from '@/store/useStorageStore';
 import { useTravelStore } from '@/store/useTravelStore';
@@ -253,37 +253,24 @@ export default function MainMenu() {
               onClick={() => router.push('/plan')}
               className="pixel-button w-full py-6 text-sm"
             >
-              1. {t('mainMenu.plan')}
+              <Map className="w-4 h-4 inline mr-2" />
+              {t('mainMenu.plan')}
             </button>
 
             <button
               onClick={() => router.push('/ai-plan')}
               className="pixel-button w-full py-6 text-sm"
             >
-              2. {t('mainMenu.aiPlan')}
+              <Wand2 className="w-4 h-4 inline mr-2" />
+              {t('mainMenu.aiPlan')}
             </button>
 
             <button
               onClick={() => router.push('/history')}
               className="pixel-button w-full py-6 text-sm"
             >
-              3. {t('mainMenu.history')}
-            </button>
-
-            <button
-              onClick={() => router.push('/settings')}
-              className="pixel-button w-full py-6 text-sm"
-            >
-              <Settings className="w-4 h-4 inline mr-2" />
-              4. {t('mainMenu.settings')}
-            </button>
-
-            <button
-              onClick={() => setShowFlightModal(true)}
-              className="pixel-button w-full py-6 text-sm"
-            >
-              <Plane className="w-4 h-4 inline mr-2" />
-              5. 查詢航班信息
+              <History className="w-4 h-4 inline mr-2" />
+              {t('mainMenu.history')}
             </button>
 
             <button
@@ -291,7 +278,23 @@ export default function MainMenu() {
               className="pixel-button w-full py-6 text-sm"
             >
               <Sparkles className="w-4 h-4 inline mr-2" />
-              6. 利用RAG技術編排行程
+              利用RAG技術編排行程
+            </button>
+
+            <button
+              onClick={() => setShowFlightModal(true)}
+              className="pixel-button w-full py-6 text-sm"
+            >
+              <Plane className="w-4 h-4 inline mr-2" />
+              查詢航班信息
+            </button>
+
+            <button
+              onClick={() => router.push('/settings')}
+              className="pixel-button w-full py-6 text-sm"
+            >
+              <Settings className="w-4 h-4 inline mr-2" />
+              {t('mainMenu.settings')}
             </button>
           </div>
         </div>
