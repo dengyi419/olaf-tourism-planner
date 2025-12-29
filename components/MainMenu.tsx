@@ -7,7 +7,7 @@ import Clock from './Clock';
 import TripList from './TripList';
 import LanguageSelector from './LanguageSelector';
 import UserMenu from './UserMenu';
-import { Settings, Menu, X, Camera, FileText, Plane, Sparkles, Map, Wand2, History } from 'lucide-react';
+import { Settings, Menu, X, Camera, FileText, Plane, Sparkles, Map, Wand2, History, BookOpen } from 'lucide-react';
 import { useLanguageStore, t } from '@/store/useLanguageStore';
 import { useStorageStore } from '@/store/useStorageStore';
 import { useTravelStore } from '@/store/useTravelStore';
@@ -295,6 +295,14 @@ export default function MainMenu() {
             >
               <Settings className="w-4 h-4 inline mr-2" />
               {t('mainMenu.settings')}
+            </button>
+
+            <button
+              onClick={() => router.push('/manual')}
+              className="pixel-button w-full py-6 text-sm border-t-2 border-black mt-6 pt-6"
+            >
+              <BookOpen className="w-4 h-4 inline mr-2" />
+              使用手冊
             </button>
           </div>
         </div>
