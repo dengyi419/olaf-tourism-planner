@@ -233,7 +233,7 @@ async function queryAirLabs(flightNumber: string, apiKey: string, flightDate?: s
       responseKeys: data.response ? Object.keys(data.response) : [],
     });
     
-    throw new Error('未找到航班信息。請確認航班編號是否正確，或該航班可能不在 AirLabs 數據庫中。');
+    throw new Error('未找到航班資訊。請確認航班編號是否正確，或該航班可能不在 AirLabs 數據庫中。');
   } catch (error: any) {
     console.error('AirLabs API 錯誤:', {
       message: error.message,
@@ -244,7 +244,7 @@ async function queryAirLabs(flightNumber: string, apiKey: string, flightDate?: s
       throw error;
     }
     // 其他錯誤包裝一下
-    throw new Error(`查詢航班信息失敗: ${error.message || '未知錯誤'}`);
+    throw new Error(`查詢航班資訊失敗: ${error.message || '未知錯誤'}`);
   }
 }
 
@@ -280,8 +280,8 @@ export async function POST(request: NextRequest) {
         // 如果後備數據庫也沒有，返回錯誤
         return NextResponse.json(
           {
-            error: error.message || `找不到航班 ${cleanedFlightNumber} 的信息`,
-            suggestion: '請確認航班編號是否正確，或聯繫機場查詢最新信息。',
+            error: error.message || `找不到航班 ${cleanedFlightNumber} 的資訊`,
+            suggestion: '請確認航班編號是否正確，或聯繫機場查詢最新資訊。',
           },
           { status: 404 }
         );
@@ -296,15 +296,15 @@ export async function POST(request: NextRequest) {
     // 如果都沒有，返回提示
     return NextResponse.json(
       {
-        error: `找不到航班 ${cleanedFlightNumber} 的信息。`,
-        suggestion: '請在設定頁面設定 AirLabs API Key 以獲取實時航班信息，或確認航班編號是否正確。',
+        error: `找不到航班 ${cleanedFlightNumber} 的資訊。`,
+        suggestion: '請在設定頁面設定 AirLabs API Key 以獲取實時航班資訊，或確認航班編號是否正確。',
       },
       { status: 404 }
     );
   } catch (error: any) {
     console.error('查詢航班信息錯誤:', error);
     return NextResponse.json(
-      { error: '查詢航班信息時發生錯誤', details: error.message },
+      { error: '查詢航班資訊時發生錯誤', details: error.message },
       { status: 500 }
     );
   }

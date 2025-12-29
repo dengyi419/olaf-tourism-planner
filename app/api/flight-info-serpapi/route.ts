@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// 先從 AirLabs 獲取機場信息，然後用 SerpAPI 查詢詳細信息
+// 先從 AirLabs 獲取機場資訊，然後用 SerpAPI 查詢詳細資訊
 async function getAirportInfoFromAirLabs(flightNumber: string, airLabsApiKey: string): Promise<{departure?: string, arrival?: string} | null> {
   if (!airLabsApiKey) return null;
   
@@ -29,7 +29,7 @@ async function getAirportInfoFromAirLabs(flightNumber: string, airLabsApiKey: st
       }
     }
   } catch (error) {
-    console.warn('無法從 AirLabs 獲取機場信息:', error);
+    console.warn('無法從 AirLabs 獲取機場資訊:', error);
   }
   return null;
 }
@@ -62,7 +62,7 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     } else {
       // 如果沒有機場代碼，嘗試使用航班編號查詢（但這可能不會工作）
       // 或者返回錯誤提示用戶需要機場信息
-      throw new Error('SerpAPI Google Flights API 需要出發地和目的地機場代碼。請先使用 AirLabs API 獲取機場信息，或手動輸入機場代碼。');
+      throw new Error('SerpAPI Google Flights API 需要出發地和目的地機場代碼。請先使用 AirLabs API 獲取機場資訊，或手動輸入機場代碼。');
     }
     
     // 如果提供了日期，添加到查詢參數中
@@ -138,7 +138,7 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     
     // 處理 SerpAPI 返回的數據
     // SerpAPI Google Flights 返回的結構可能包含 best_flights, other_flights, flights 等
-    // 也可能直接包含航班信息
+    // 也可能直接包含航班資訊
     let flights: any[] = [];
     
     if (data.best_flights && Array.isArray(data.best_flights)) {
@@ -148,7 +148,7 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     } else if (data.flights && Array.isArray(data.flights)) {
       flights = data.flights;
     } else if (data.flight_info) {
-      // 如果返回的是單個航班信息
+      // 如果返回的是單個航班資訊
       flights = [data.flight_info];
     }
     
@@ -176,22 +176,22 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
         arrival: flight.arrival_airport?.id || flight.arrival_airport?.name,
       });
       
-      // 提取機場信息（根據 SerpAPI 文檔格式）
+      // 提取機場資訊（根據 SerpAPI 文檔格式）
       const departure = flight.departure_airport || {};
       const arrival = flight.arrival_airport || {};
       
-      // 提取延誤信息（SerpAPI 可能不直接提供延誤信息，需要從其他字段推斷）
-      // 注意：SerpAPI Google Flights 主要提供價格和路線信息，延誤信息可能需要其他 API
+      // 提取延誤資訊（SerpAPI 可能不直接提供延誤資訊，需要從其他字段推斷）
+      // 注意：SerpAPI Google Flights 主要提供價格和路線資訊，延誤資訊可能需要其他 API
       const isDelayed = flight.delay || flight.delayed || flight.is_delayed || false;
       const delayMinutes = flight.delay_minutes || flight.delay_min || 0;
       
-      // 提取航班信息
+      // 提取航班資訊
       const airline = flight.airline || '';
       const airlineCode = flight.airline_code || '';
       const flightNum = flight.flight_number || flightNumber;
       
-      // 提取行李信息（如果 SerpAPI 提供）
-      // SerpAPI 可能在不同字段中提供行李信息
+      // 提取行李資訊（如果 SerpAPI 提供）
+      // SerpAPI 可能在不同字段中提供行李資訊
       const baggagePrices = flight.baggage_prices || flight.baggage || [];
       const baggageInfo: any = {};
       
@@ -215,12 +215,12 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
         baggageInfo.checkedBaggage = checkedItem ? (typeof checkedItem === 'string' ? checkedItem : checkedItem.text || checkedItem.label) : undefined;
       }
       
-      // 如果沒有行李信息，嘗試從其他字段獲取
+      // 如果沒有行李資訊，嘗試從其他字段獲取
       if (!baggageInfo.baggageAllowance && flight.baggage_allowance) {
         baggageInfo.baggageAllowance = flight.baggage_allowance;
       }
       
-      // 提取飛機型號信息
+      // 提取飛機型號資訊
       const aircraft = flight.aircraft || flight.plane || {};
       const aircraftInfo = aircraft.code || aircraft.icao || aircraft.iata || aircraft.name ? {
         code: aircraft.code || aircraft.icao || aircraft.iata,
@@ -254,11 +254,11 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
           departure: flight.departure_time_actual || flight.dep_actual || undefined,
           arrival: flight.arrival_time_actual || flight.arr_actual || undefined,
         },
-        // 行李信息（如果有的話）
+        // 行李資訊（如果有的話）
         baggageInfo: Object.keys(baggageInfo).length > 0 ? baggageInfo : undefined,
         // 飛機型號
         aircraft: aircraftInfo,
-        // 額外信息
+        // 額外資訊
         airline: airline,
         duration: flight.duration, // 飛行時長（分鐘）
         price: flight.price, // 價格
@@ -270,7 +270,7 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     }
     
     // 如果沒有找到航班，返回 null 讓調用者使用 AirLabs 數據
-    console.warn('SerpAPI 未找到航班信息，將使用 AirLabs 數據:', {
+    console.warn('SerpAPI 未找到航班資訊，將使用 AirLabs 數據:', {
       hasData: !!data,
       dataKeys: data ? Object.keys(data) : [],
       hasBestFlights: !!data.best_flights,
@@ -289,7 +289,7 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       throw error;
     }
     // 其他錯誤包裝一下
-    throw new Error(`查詢航班信息失敗: ${error.message || '未知錯誤'}`);
+    throw new Error(`查詢航班資訊失敗: ${error.message || '未知錯誤'}`);
   }
 }
 
@@ -326,12 +326,12 @@ export async function POST(request: NextRequest) {
           }
           
           // 同時獲取 AirLabs 的完整航班信息（用於延誤狀態和時間）
-          // 注意：AirLabs API 目前不支持日期參數，只能查詢實時/當天的航班信息
+          // 注意：AirLabs API 目前不支持日期參數，只能查詢實時/當天的航班資訊
           // 如果用戶選擇了未來日期，我們仍然查詢實時數據，但會在響應中標記
           try {
             const cleanedAirLabsKey = airLabsApiKey.trim().replace(/\s+/g, '');
             // AirLabs API 不支持日期參數，所以不添加日期
-            // 這意味著我們只能獲取實時/當天的航班信息
+            // 這意味著我們只能獲取實時/當天的航班資訊
             const airLabsUrl = `https://airlabs.co/api/v9/flight?api_key=${cleanedAirLabsKey}&flight_iata=${cleanedFlightNumber}`;
             const airLabsResponse = await fetch(airLabsUrl);
             if (airLabsResponse.ok) {
@@ -353,7 +353,7 @@ export async function POST(request: NextRequest) {
               }
             }
           } catch (err) {
-            console.warn('無法獲取 AirLabs 完整信息:', err);
+            console.warn('無法獲取 AirLabs 完整資訊:', err);
           }
         }
         
@@ -441,7 +441,7 @@ export async function POST(request: NextRequest) {
         }
         
         // 合併 SerpAPI 和 AirLabs 的數據
-        // SerpAPI 提供路線和價格信息，AirLabs 提供實時狀態和延誤信息
+        // SerpAPI 提供路線和價格資訊，AirLabs 提供實時狀態和延誤資訊
         if (airLabsFlightInfo && serpApiFlightInfo) {
           // 解析 AirLabs 的時間格式
           const parseTime = (timeValue: any) => {
@@ -497,7 +497,7 @@ export async function POST(request: NextRequest) {
               departure: depActual ? depActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : serpApiFlightInfo.actualTime?.departure,
               arrival: arrActual ? arrActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : serpApiFlightInfo.actualTime?.arrival,
             },
-            // 合併行李信息：優先使用 SerpAPI 的行李限額信息，AirLabs 的行李轉盤信息
+            // 合併行李資訊：優先使用 SerpAPI 的行李限額資訊，AirLabs 的行李轉盤資訊
             baggageInfo: (() => {
               const merged: any = {};
               if (serpApiFlightInfo.baggageInfo) {
@@ -506,13 +506,13 @@ export async function POST(request: NextRequest) {
               if (airLabsFlightInfo.arr_baggage) {
                 merged.baggageClaim = airLabsFlightInfo.arr_baggage;
               }
-              // 如果只有行李轉盤信息，也返回
+              // 如果只有行李轉盤資訊，也返回
               if (!merged.baggageAllowance && !merged.carryOn && !merged.checkedBaggage && merged.baggageClaim) {
                 return merged;
               }
               return Object.keys(merged).length > 0 ? merged : undefined;
             })(),
-            // 合併飛機型號：優先使用 AirLabs 的飛機信息
+            // 合併飛機型號：優先使用 AirLabs 的飛機資訊
             aircraft: airLabsFlightInfo.aircraft_icao || airLabsFlightInfo.aircraft_iata ? {
               code: airLabsFlightInfo.aircraft_icao || airLabsFlightInfo.aircraft_iata,
               name: airLabsFlightInfo.aircraft_name || undefined,
@@ -537,8 +537,8 @@ export async function POST(request: NextRequest) {
         
         return NextResponse.json(
           {
-            error: error.message || `找不到航班 ${cleanedFlightNumber} 的信息`,
-            suggestion: '請確認航班編號是否正確，或聯繫機場查詢最新信息。',
+            error: error.message || `找不到航班 ${cleanedFlightNumber} 的資訊`,
+            suggestion: '請確認航班編號是否正確，或聯繫機場查詢最新資訊。',
           },
           { status: 404 }
         );
@@ -548,15 +548,15 @@ export async function POST(request: NextRequest) {
     // 如果沒有 SerpAPI Key，返回提示
     return NextResponse.json(
       {
-        error: `找不到航班 ${cleanedFlightNumber} 的信息。`,
-        suggestion: '請在設定頁面設定 SerpAPI API Key 以獲取實時航班信息和延誤狀態，或確認航班編號是否正確。',
+        error: `找不到航班 ${cleanedFlightNumber} 的資訊。`,
+        suggestion: '請在設定頁面設定 SerpAPI API Key 以獲取實時航班資訊和延誤狀態，或確認航班編號是否正確。',
       },
       { status: 404 }
     );
   } catch (error: any) {
-    console.error('查詢航班信息錯誤:', error);
+    console.error('查詢航班資訊錯誤:', error);
     return NextResponse.json(
-      { error: '查詢航班信息時發生錯誤', details: error.message },
+      { error: '查詢航班資訊時發生錯誤', details: error.message },
       { status: 500 }
     );
   }
