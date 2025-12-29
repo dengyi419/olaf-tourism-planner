@@ -135,7 +135,7 @@ export default function Clock() {
   const displayDateStr = displayDate.toISOString().split('T')[0];
 
   return (
-    <>
+    <div className="flex flex-row gap-2">
       {/* 時間卡片 */}
       <div className="pixel-card p-3 bg-white">
         <div className="text-xs text-center" style={{ fontFamily: "'Press Start 2P', monospace", lineHeight: '1.6' }}>
@@ -173,7 +173,7 @@ export default function Clock() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
