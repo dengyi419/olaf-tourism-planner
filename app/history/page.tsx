@@ -186,12 +186,24 @@ export default function HistoryPage() {
             {currentTrip ? (
               <div className="space-y-6">
                 <div className="pixel-card p-4">
-                  <h1 className="text-xl mb-2">{currentTrip.name}</h1>
-                  <p className="text-xs">
-                    目的地: {currentTrip.settings.destination} | 
-                    預算: {currentTrip.settings.currency} {currentTrip.settings.totalBudget.toLocaleString()} | 
-                    {currentTrip.itinerary.length} 天
-                  </p>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <h1 className="text-xl mb-2">{currentTrip.name}</h1>
+                      <p className="text-xs">
+                        目的地: {currentTrip.settings.destination} | 
+                        預算: {currentTrip.settings.currency} {currentTrip.settings.totalBudget.toLocaleString()} | 
+                        {currentTrip.itinerary.length} 天
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteTrip(currentTrip.id)}
+                      className="pixel-button px-4 py-2 text-sm bg-red-500 hover:bg-red-600 ml-4"
+                      title="刪除此行程"
+                    >
+                      <Trash2 className="w-4 h-4 inline mr-2" />
+                      刪除行程
+                    </button>
+                  </div>
                 </div>
 
                 {currentTrip.itinerary.map((day) => (
