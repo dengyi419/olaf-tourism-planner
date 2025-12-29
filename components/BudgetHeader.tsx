@@ -31,7 +31,7 @@ export default function BudgetHeader() {
   const logoPath = process.env.NEXT_PUBLIC_LOGO_PATH || '/logo.png';
 
   return (
-    <div className="sticky top-0 z-30 bg-white border-b-4 border-black">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b-4 border-black shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
