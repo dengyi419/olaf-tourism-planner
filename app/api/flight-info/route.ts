@@ -146,52 +146,74 @@ async function queryAirLabs(flightNumber: string, apiKey: string, flightDate?: s
     }
     
     // 處理 AirLabs 返回的數據
-    // AirLabs API 可能返回 response 數組，或者直接返回數據
-    const flightData = data.response || data;
-    const flights = Array.isArray(flightData) ? flightData : (flightData.flights || []);
+    // AirLabs API 返回的 response 是一個對象，不是數組
+    // 結構：{ request: {...}, response: { flight_iata: "...", ... }, terms: "..." }
+    const flight = data.response;
     
     console.log('解析後的航班數據:', {
       hasResponse: !!data.response,
-      responseLength: Array.isArray(data.response) ? data.response.length : 'not array',
-      flightsLength: flights.length,
-      dataKeys: Object.keys(data),
+      responseType: typeof data.response,
+      responseIsArray: Array.isArray(data.response),
+      hasFlightIata: !!flight?.flight_iata,
+      flightIata: flight?.flight_iata,
     });
     
-    if (flights.length > 0) {
-      const flight = flights[0]; // 使用第一個結果
-      
+    if (flight && flight.flight_iata) {
       console.log('找到航班:', {
         flight_iata: flight.flight_iata,
         flight_icao: flight.flight_icao,
         dep_iata: flight.dep_iata,
         arr_iata: flight.arr_iata,
+        status: flight.status,
       });
       
       // 轉換為我們的格式
+      // 注意：AirLabs 返回的時間格式是字符串 "2025-12-28 13:30" 或 Unix 時間戳（秒）
+      const parseTime = (timeValue: any) => {
+        if (!timeValue) return undefined;
+        // 如果是字符串格式 "YYYY-MM-DD HH:mm"
+        if (typeof timeValue === 'string' && timeValue.includes(' ')) {
+          const [datePart, timePart] = timeValue.split(' ');
+          const [year, month, day] = datePart.split('-');
+          const [hour, minute] = timePart.split(':');
+          return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute));
+        }
+        // 如果是 Unix 時間戳（秒）
+        if (typeof timeValue === 'number') {
+          return new Date(timeValue * 1000);
+        }
+        return undefined;
+      };
+      
+      const depTime = parseTime(flight.dep_time || flight.dep_time_ts);
+      const arrTime = parseTime(flight.arr_time || flight.arr_time_ts);
+      const depActual = parseTime(flight.dep_actual || flight.dep_actual_ts);
+      const arrActual = parseTime(flight.arr_actual || flight.arr_actual_ts);
+      
       return {
         flightNumber: flight.flight_iata || flight.flight_icao || flightNumber,
         departure: {
           airport: flight.dep_iata || flight.dep_icao || '',
-          city: flight.dep_name || flight.dep_city || '',
+          city: flight.dep_city || flight.dep_name || '',
           terminal: flight.dep_terminal || undefined,
           checkInCounter: undefined, // AirLabs 通常不提供此信息
           gate: flight.dep_gate || undefined,
         },
         arrival: {
           airport: flight.arr_iata || flight.arr_icao || '',
-          city: flight.arr_name || flight.arr_city || '',
+          city: flight.arr_city || flight.arr_name || '',
           terminal: flight.arr_terminal || undefined,
           gate: flight.arr_gate || undefined,
           baggageClaim: flight.arr_baggage || undefined,
         },
-        status: flight.status || flight.flight_status || '未知',
+        status: flight.status || '未知',
         scheduledTime: {
-          departure: flight.dep_time ? new Date(flight.dep_time * 1000).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
-          arrival: flight.arr_time ? new Date(flight.arr_time * 1000).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
+          departure: depTime ? depTime.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
+          arrival: arrTime ? arrTime.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
         },
         actualTime: {
-          departure: flight.dep_actual ? new Date(flight.dep_actual * 1000).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
-          arrival: flight.arr_actual ? new Date(flight.arr_actual * 1000).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
+          departure: depActual ? depActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
+          arrival: arrActual ? arrActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
         },
       };
     }
@@ -199,11 +221,9 @@ async function queryAirLabs(flightNumber: string, apiKey: string, flightDate?: s
     // 如果沒有找到航班，記錄詳細信息以便調試
     console.warn('未找到航班信息，API 響應結構:', {
       hasData: !!data,
-      dataType: typeof data,
-      dataKeys: data ? Object.keys(data) : [],
-      responseType: data?.response ? typeof data.response : 'no response',
-      responseIsArray: Array.isArray(data?.response),
-      responseLength: Array.isArray(data?.response) ? data.response.length : 'not array',
+      hasResponse: !!data.response,
+      responseType: typeof data.response,
+      responseKeys: data.response ? Object.keys(data.response) : [],
     });
     
     throw new Error('未找到航班信息。請確認航班編號是否正確，或該航班可能不在 AirLabs 數據庫中。');
