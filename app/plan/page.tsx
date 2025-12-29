@@ -580,6 +580,39 @@ export default function PlanPage() {
                 <p className="text-xs mt-1">
                   {itinerary.length > 0 ? `${itinerary.length} 天行程規劃` : '開始新增您的行程'}
                 </p>
+                {/* 日期修改功能 */}
+                {tripSettings?.startDate && (
+                  <div className="mt-3 flex items-center gap-2">
+                    <label className="text-xs whitespace-nowrap">開始日期：</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => {
+                        const newStartDate = e.target.value;
+                        setStartDate(newStartDate);
+                        // 更新 tripSettings 中的 startDate
+                        const updatedSettings = {
+                          ...tripSettings,
+                          startDate: newStartDate,
+                        };
+                        setTripSettings(updatedSettings);
+                        // 更新所有行程的日期
+                        const updatedItinerary = itinerary.map((day, index) => {
+                          const dayDate = new Date(newStartDate);
+                          dayDate.setDate(dayDate.getDate() + index);
+                          return {
+                            ...day,
+                            date: dayDate.toISOString().split('T')[0],
+                          };
+                        });
+                        setItinerary(updatedItinerary);
+                        // 自動保存
+                        updateCurrentTrip(updatedSettings, updatedItinerary);
+                      }}
+                      className="pixel-input px-2 py-1 text-xs"
+                    />
+                  </div>
+                )}
               </div>
               <div className="flex gap-3">
                 {!hasItinerary && (
