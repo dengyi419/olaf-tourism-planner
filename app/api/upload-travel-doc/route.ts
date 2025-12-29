@@ -13,18 +13,20 @@ const SUPPORTED_TYPES = {
   'application/json': 'text',
 } as const;
 
-// 使用 Gemini 解析 PDF（透過圖片 OCR）
+// 使用 Gemini 解析 PDF（Gemini 1.5+ 支援 PDF）
 async function parsePDFWithGemini(pdfBase64: string, apiKey: string): Promise<string> {
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    // 使用支援 PDF 的模型（gemini-1.5-pro 或 gemini-1.5-flash）
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     
-    // 注意：Gemini API 不直接支援 PDF，我們需要先將 PDF 轉換為圖片
-    // 這裡簡化處理，實際應該使用 PDF.js 或類似工具將 PDF 轉為圖片
-    // 為了演示，我們假設 PDF 已經轉換為圖片格式
+    // 移除 data URL 前綴（如果有的話）
+    const base64Data = pdfBase64.includes(',') 
+      ? pdfBase64.split(',')[1] 
+      : pdfBase64;
     
     const result = await model.generateContent([
-      '請仔細閱讀這份旅遊相關文件，提取所有有用的資訊，包括：',
+      '請仔細閱讀這份旅遊相關 PDF 文件，提取所有有用的資訊，包括：',
       '1. 目的地、城市、國家',
       '2. 景點、餐廳、商店名稱',
       '3. 推薦的活動、行程建議',
@@ -35,8 +37,8 @@ async function parsePDFWithGemini(pdfBase64: string, apiKey: string): Promise<st
       '請以結構化的方式整理這些資訊，方便後續用於行程規劃。',
       {
         inlineData: {
-          data: pdfBase64.split(',')[1] || pdfBase64, // 移除 data:image/...;base64, 前綴
-          mimeType: 'image/png', // 假設已轉換為 PNG
+          data: base64Data,
+          mimeType: 'application/pdf', // 正確的 PDF MIME type
         },
       },
     ]);
@@ -45,15 +47,35 @@ async function parsePDFWithGemini(pdfBase64: string, apiKey: string): Promise<st
     return response.text();
   } catch (error: any) {
     console.error('PDF 解析錯誤:', error);
+    
+    // 如果 PDF 解析失敗，嘗試使用文字提取作為後備
+    if (error.message?.includes('Unable to process input') || error.message?.includes('400')) {
+      throw new Error(`PDF 解析失敗：此 PDF 可能不包含可讀取的文字內容，或格式不支援。建議使用包含文字的 PDF 文件，或將 PDF 轉換為圖片後上傳。\n\n錯誤詳情：${error.message}`);
+    }
+    
     throw new Error(`PDF 解析失敗: ${error.message}`);
   }
 }
 
 // 使用 Gemini 解析圖片（OCR + 內容理解）
-async function parseImageWithGemini(imageBase64: string, apiKey: string): Promise<string> {
+async function parseImageWithGemini(imageBase64: string, apiKey: string, mimeType: string = 'image/png'): Promise<string> {
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    
+    // 移除 data URL 前綴（如果有的話）
+    const base64Data = imageBase64.includes(',') 
+      ? imageBase64.split(',')[1] 
+      : imageBase64;
+    
+    // 從 data URL 中提取 MIME type（如果有的話）
+    let actualMimeType = mimeType;
+    if (imageBase64.startsWith('data:')) {
+      const mimeMatch = imageBase64.match(/data:([^;]+)/);
+      if (mimeMatch && mimeMatch[1]) {
+        actualMimeType = mimeMatch[1];
+      }
+    }
     
     const result = await model.generateContent([
       '請仔細閱讀這張旅遊相關圖片，提取所有有用的資訊，包括：',
@@ -67,8 +89,8 @@ async function parseImageWithGemini(imageBase64: string, apiKey: string): Promis
       '請以結構化的方式整理這些資訊，方便後續用於行程規劃。',
       {
         inlineData: {
-          data: imageBase64.split(',')[1] || imageBase64, // 移除 data:image/...;base64, 前綴
-          mimeType: 'image/png',
+          data: base64Data,
+          mimeType: actualMimeType,
         },
       },
     ]);
@@ -134,10 +156,11 @@ export async function POST(request: NextRequest) {
 
     // 根據檔案類型解析
     if (supportedType === 'pdf') {
-      // PDF 解析（簡化版，實際應該使用 PDF.js）
+      // PDF 解析（使用 Gemini 1.5+ 的 PDF 支援）
       extractedText = await parsePDFWithGemini(dataUrl, userApiKey);
     } else if (supportedType === 'image') {
-      extractedText = await parseImageWithGemini(dataUrl, userApiKey);
+      // 圖片解析（OCR + 內容理解）
+      extractedText = await parseImageWithGemini(dataUrl, userApiKey, fileType);
     } else if (supportedType === 'text') {
       const text = buffer.toString('utf-8');
       extractedText = await parseTextFile(text);
