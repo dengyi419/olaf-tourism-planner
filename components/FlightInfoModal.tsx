@@ -33,6 +33,12 @@ interface FlightInfo {
 
 export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProps) {
   const [flightNumber, setFlightNumber] = useState('');
+  // 計算最小日期（前兩天）
+  const getMinDate = () => {
+    const date = new Date();
+    date.setDate(date.getDate() - 2);
+    return date.toISOString().split('T')[0];
+  };
   const [flightDate, setFlightDate] = useState(new Date().toISOString().split('T')[0]); // 預設為今天
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -124,10 +130,10 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
               value={flightDate}
               onChange={(e) => setFlightDate(e.target.value)}
               className="pixel-input w-full px-4 py-2"
-              min={new Date().toISOString().split('T')[0]} // 不能選擇過去的日期
+              min={getMinDate()} // 可以選擇前兩天
             />
             <p className="text-[10px] opacity-70 mt-1">
-              選擇要查詢的航班日期（預設為今天）
+              選擇要查詢的航班日期（可選擇前兩天至未來日期，預設為今天）
             </p>
           </div>
 
