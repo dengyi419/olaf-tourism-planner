@@ -298,6 +298,14 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                   </div>
                 </div>
 
+                {/* Extensions 資訊（行李、Wi-Fi等） */}
+                {flightInfo.extensions && (
+                  <div className="mt-4 p-3 bg-blue-50 border-2 border-blue-300 rounded">
+                    <div className="text-xs font-bold mb-1">{t('flight.extensions') || '航班資訊'}</div>
+                    <div className="text-xs opacity-80">{flightInfo.extensions}</div>
+                  </div>
+                )}
+
                 {/* 行李資訊 */}
                 {(flightInfo.baggageInfo || flightInfo.arrival.baggageClaim) && (
                   <div className="mt-4 pt-4 border-t-2 border-black">
