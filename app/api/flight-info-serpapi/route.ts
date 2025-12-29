@@ -284,7 +284,6 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       // 優先使用 included_baggage 欄位（SerpAPI 標準欄位）
       if (leg.included_baggage || flight.included_baggage) {
         const includedBaggage = leg.included_baggage || flight.included_baggage;
-        const includedBaggage = flight.included_baggage;
         
         // included_baggage 可能是字符串或對象
         if (typeof includedBaggage === 'string') {
