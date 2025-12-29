@@ -383,26 +383,53 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
         }
       }
       
-      // 提取 extensions 資訊（行李、Wi-Fi等）- 從 leg 中提取
+      // 提取 extensions 資訊（行李、Wi-Fi、可能包含航廈/登機門等文字）- 從 leg 中提取
       const extensions = leg.extensions || [];
       const extensionsText = Array.isArray(extensions) 
         ? extensions.map((ext: any) => typeof ext === 'string' ? ext : ext.text || ext.label || '').filter(Boolean).join(', ')
         : '';
-      
+
+      // 嘗試從 SerpAPI 的 extensions 文字中「推測」航廈 / 登機門 / 報到櫃檯（非官方欄位，僅作為提示）
+      let serpTerminal: string | undefined;
+      let serpGate: string | undefined;
+      let serpCheckInCounter: string | undefined;
+
+      if (extensionsText) {
+        // 例："... Departs from Terminal 2 ..." 或 "... Terminal 1 ..."
+        const terminalMatch = extensionsText.match(/Terminal\s+([A-Za-z0-9]+)/i);
+        if (terminalMatch) {
+          serpTerminal = `Terminal ${terminalMatch[1]}`;
+        }
+
+        // 例："... Gate 23 ..."
+        const gateMatch = extensionsText.match(/Gate\s+([A-Za-z0-9]+)/i);
+        if (gateMatch) {
+          serpGate = gateMatch[1];
+        }
+
+        // 例："... Check-in at counter 12 ..." 或 "... check in desk 5 ..."
+        const checkInMatch = extensionsText.match(/Check[- ]?in[^0-9A-Za-z]*([A-Za-z0-9]+)/i);
+        if (checkInMatch) {
+          serpCheckInCounter = checkInMatch[1];
+        }
+      }
+
       return {
         flightNumber: `${airlineCode}${flightNum}` || flightNumber,
         departure: {
           airport: departure.id || departure.name || '',
           city: departure.name || departure.city || '',
-          terminal: undefined, // SerpAPI 通常不提供
-          gate: undefined, // SerpAPI 通常不提供
-          checkInCounter: undefined,
+          // SerpAPI 通常不提供這些欄位，這裡是從文字中「推測」的結果，僅作為參考
+          terminal: serpTerminal,
+          gate: serpGate,
+          checkInCounter: serpCheckInCounter,
         },
         arrival: {
           airport: arrival.id || arrival.name || '',
           city: arrival.name || arrival.city || '',
-          terminal: undefined, // SerpAPI 通常不提供
-          gate: undefined, // SerpAPI 通常不提供
+          // 對到達航廈 / 登機門目前難以從文字中確定，暫不推測
+          terminal: undefined,
+          gate: undefined,
           baggageClaim: undefined,
         },
         status: isDelayed ? `延誤 ${delayMinutes} 分鐘` : '準時',
