@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useTravelStore } from '@/store/useTravelStore';
 import { Wallet } from 'lucide-react';
 import { ReactNode } from 'react';
@@ -10,6 +11,32 @@ interface BudgetHeaderProps {
 
 export default function BudgetHeader({ rightButtons }: BudgetHeaderProps) {
   const { tripSettings, getTotalSpent, getRemainingBudget, getTodaySpent, itinerary } = useTravelStore();
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // 只在手機上啟用滑動隱藏功能
+      if (window.innerWidth <= 768) {
+        // 向下滑動時隱藏，向上滑動時顯示
+        if (currentScrollY > lastScrollY && currentScrollY > 100) {
+          setIsVisible(false);
+        } else if (currentScrollY < lastScrollY) {
+          setIsVisible(true);
+        }
+      } else {
+        // 桌面版永遠顯示
+        setIsVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
   
   if (!tripSettings) {
     return null;
@@ -36,7 +63,11 @@ export default function BudgetHeader({ rightButtons }: BudgetHeaderProps) {
   const logoPath = process.env.NEXT_PUBLIC_LOGO_PATH || '/logo.png';
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b-4 border-black shadow-lg">
+    <div 
+      className={`fixed top-0 left-0 right-0 z-50 bg-white border-b-4 border-black shadow-lg transition-transform duration-300 ${
+        isVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">

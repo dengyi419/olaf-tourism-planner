@@ -6,7 +6,6 @@ import { useTravelStore } from '@/store/useTravelStore';
 import { useStorageStore } from '@/store/useStorageStore';
 import BudgetHeader from '@/components/BudgetHeader';
 import DaySection from '@/components/DaySection';
-import Clock from '@/components/Clock';
 import { Plus, Home, Save, FileDown, History } from 'lucide-react';
 import { Activity, DayItinerary } from '@/types';
 
@@ -333,7 +332,6 @@ export default function PlanPage() {
       <BudgetHeader 
         rightButtons={
           <>
-            <Clock />
             <button
               onClick={() => router.push('/')}
               className="pixel-button px-3 py-1.5 text-xs"
