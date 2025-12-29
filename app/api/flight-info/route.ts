@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// 模擬航班數據庫（實際應用中應該使用真實的航班 API）
+// 模擬航班數據庫（作為後備數據）
 const FLIGHT_DATABASE: Record<string, any> = {
   // 示例數據
   'CI100': {
@@ -49,10 +49,82 @@ const FLIGHT_DATABASE: Record<string, any> = {
   },
 };
 
+// AviationStack API 查詢函數
+async function queryAviationStack(flightNumber: string, apiKey: string) {
+  try {
+    // AviationStack API 端點
+    // API 文檔：https://aviationstack.com/documentation
+    const baseUrl = 'https://api.aviationstack.com/v1/flights';
+    const params = new URLSearchParams({
+      access_key: apiKey,
+      flight_iata: flightNumber,
+      limit: '1',
+    });
+    
+    const response = await fetch(`${baseUrl}?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('AviationStack API Key 無效或已過期');
+      }
+      if (errorData.error?.info) {
+        throw new Error(`AviationStack API 錯誤: ${errorData.error.info}`);
+      }
+      throw new Error(`AviationStack API 錯誤: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // 處理 AviationStack 返回的數據
+    if (data.data && data.data.length > 0) {
+      const flight = data.data[0]; // 使用第一個結果
+      
+      // 轉換為我們的格式
+      return {
+        flightNumber: flight.flight?.iata || flight.flight?.number || flightNumber,
+        departure: {
+          airport: flight.departure?.iata || flight.departure?.icao || '',
+          city: flight.departure?.airport || flight.departure?.city || '',
+          terminal: flight.departure?.terminal || undefined,
+          checkInCounter: undefined, // AviationStack 通常不提供此信息
+          gate: flight.departure?.gate || undefined,
+        },
+        arrival: {
+          airport: flight.arrival?.iata || flight.arrival?.icao || '',
+          city: flight.arrival?.airport || flight.arrival?.city || '',
+          terminal: flight.arrival?.terminal || undefined,
+          gate: flight.arrival?.gate || undefined,
+          baggageClaim: flight.arrival?.baggage || undefined,
+        },
+        status: flight.flight_status || '未知',
+        scheduledTime: {
+          departure: flight.departure?.scheduled ? new Date(flight.departure.scheduled).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
+          arrival: flight.arrival?.scheduled ? new Date(flight.arrival.scheduled).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
+        },
+        actualTime: {
+          departure: flight.departure?.actual ? new Date(flight.departure.actual).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
+          arrival: flight.arrival?.actual ? new Date(flight.arrival.actual).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
+        },
+      };
+    }
+    
+    throw new Error('未找到航班信息');
+  } catch (error: any) {
+    console.error('AviationStack API 錯誤:', error);
+    throw error;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { flightNumber } = body;
+    const { flightNumber, userApiKey } = body;
 
     if (!flightNumber) {
       return NextResponse.json(
@@ -64,17 +136,41 @@ export async function POST(request: NextRequest) {
     // 清理航班編號（移除空格，轉為大寫）
     const cleanedFlightNumber = flightNumber.trim().toUpperCase();
 
-    // 嘗試從數據庫獲取
+    // 優先使用 AviationStack API（如果提供了 API Key）
+    const aviationStackApiKey = userApiKey || process.env.AVIATIONSTACK_API_KEY;
+    
+    if (aviationStackApiKey) {
+      try {
+        const flightInfo = await queryAviationStack(cleanedFlightNumber, aviationStackApiKey);
+        return NextResponse.json(flightInfo);
+      } catch (error: any) {
+        console.error('AviationStack 查詢失敗:', error);
+        // 如果 AviationStack 失敗，嘗試使用後備數據庫
+        if (FLIGHT_DATABASE[cleanedFlightNumber]) {
+          console.log('使用後備數據庫');
+          return NextResponse.json(FLIGHT_DATABASE[cleanedFlightNumber]);
+        }
+        // 如果後備數據庫也沒有，返回錯誤
+        return NextResponse.json(
+          {
+            error: error.message || `找不到航班 ${cleanedFlightNumber} 的信息`,
+            suggestion: '請確認航班編號是否正確，或聯繫機場查詢最新信息。',
+          },
+          { status: 404 }
+        );
+      }
+    }
+
+    // 如果沒有 AviationStack API Key，使用後備數據庫
     if (FLIGHT_DATABASE[cleanedFlightNumber]) {
       return NextResponse.json(FLIGHT_DATABASE[cleanedFlightNumber]);
     }
 
-    // 如果數據庫中沒有，嘗試使用 Google Search API 或其他航班 API
-    // 這裡我們先返回一個提示，建議使用真實的航班 API
+    // 如果都沒有，返回提示
     return NextResponse.json(
       {
-        error: `找不到航班 ${cleanedFlightNumber} 的信息。\n\n提示：此功能需要整合真實的航班 API（如 FlightAware、AviationStack 等）來獲取實時航班信息。`,
-        suggestion: '請確認航班編號是否正確，或聯繫機場查詢最新信息。',
+        error: `找不到航班 ${cleanedFlightNumber} 的信息。`,
+        suggestion: '請在設定頁面設定 AviationStack API Key 以獲取實時航班信息，或確認航班編號是否正確。',
       },
       { status: 404 }
     );
@@ -86,4 +182,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
