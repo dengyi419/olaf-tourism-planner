@@ -157,7 +157,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
             />
             <p className="text-[10px] opacity-70 mt-1">
               {useSerpAPI 
-                ? 'SerpAPI 支持日期查詢，將查詢指定日期的航班信息'
+                ? 'SerpAPI 支持日期查詢，將查詢指定日期的航班信息（實時狀態來自 AirLabs，僅顯示當天數據）'
                 : '注意：AirLabs API 目前不支持日期參數，將查詢實時航班信息'}
             </p>
           </div>

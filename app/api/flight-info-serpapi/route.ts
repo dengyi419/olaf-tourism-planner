@@ -283,14 +283,30 @@ export async function POST(request: NextRequest) {
           }
           
           // 同時獲取 AirLabs 的完整航班信息（用於延誤狀態和時間）
+          // 注意：AirLabs API 目前不支持日期參數，只能查詢實時/當天的航班信息
+          // 如果用戶選擇了未來日期，我們仍然查詢實時數據，但會在響應中標記
           try {
             const cleanedAirLabsKey = airLabsApiKey.trim().replace(/\s+/g, '');
+            // AirLabs API 不支持日期參數，所以不添加日期
+            // 這意味著我們只能獲取實時/當天的航班信息
             const airLabsUrl = `https://airlabs.co/api/v9/flight?api_key=${cleanedAirLabsKey}&flight_iata=${cleanedFlightNumber}`;
             const airLabsResponse = await fetch(airLabsUrl);
             if (airLabsResponse.ok) {
               const airLabsData = await airLabsResponse.json();
               if (airLabsData.response && airLabsData.response.flight_iata) {
                 airLabsFlightInfo = airLabsData.response;
+                // 如果用戶選擇的日期不是今天，標記數據為實時數據
+                if (flightDate) {
+                  const selectedDate = new Date(flightDate);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  selectedDate.setHours(0, 0, 0, 0);
+                  if (selectedDate.getTime() !== today.getTime()) {
+                    // 標記這是實時數據，不是用戶選擇日期的數據
+                    airLabsFlightInfo._isRealTimeData = true;
+                    airLabsFlightInfo._requestedDate = flightDate;
+                  }
+                }
               }
             }
           } catch (err) {
