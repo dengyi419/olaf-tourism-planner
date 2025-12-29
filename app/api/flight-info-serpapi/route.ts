@@ -70,7 +70,7 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     
     // 記錄完整的 API 響應以便調試（限制長度避免日誌過大）
     const responseStr = JSON.stringify(data);
-    console.log('SerpAPI Google Flights API 響應:', responseStr.length > 1000 ? responseStr.substring(0, 1000) + '...' : responseStr);
+    console.log('SerpAPI Google Flights API 響應:', responseStr.length > 2000 ? responseStr.substring(0, 2000) + '...' : responseStr);
     
     // 檢查 API 返回的錯誤
     if (data.error) {
@@ -79,61 +79,111 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     }
     
     // 處理 SerpAPI 返回的數據
-    // SerpAPI Google Flights 返回的結構可能包含 best_flights, other_flights 等
-    const flights = data.best_flights || data.other_flights || [];
+    // SerpAPI Google Flights 返回的結構可能包含 best_flights, other_flights, flights 等
+    // 也可能直接包含航班信息
+    let flights: any[] = [];
+    
+    if (data.best_flights && Array.isArray(data.best_flights)) {
+      flights = data.best_flights;
+    } else if (data.other_flights && Array.isArray(data.other_flights)) {
+      flights = data.other_flights;
+    } else if (data.flights && Array.isArray(data.flights)) {
+      flights = data.flights;
+    } else if (data.flight_info) {
+      // 如果返回的是單個航班信息
+      flights = [data.flight_info];
+    }
+    
+    console.log('解析後的 SerpAPI 航班數據:', {
+      hasBestFlights: !!data.best_flights,
+      hasOtherFlights: !!data.other_flights,
+      hasFlights: !!data.flights,
+      hasFlightInfo: !!data.flight_info,
+      flightsLength: flights.length,
+      dataKeys: Object.keys(data),
+    });
     
     if (flights.length > 0) {
       const flight = flights[0]; // 使用第一個結果
-      const flightInfo = flight.flights?.[0] || flight;
+      // SerpAPI 可能返回嵌套的 flights 數組
+      const flightInfo = Array.isArray(flight.flights) && flight.flights.length > 0 
+        ? flight.flights[0] 
+        : flight;
+      
+      console.log('找到航班:', {
+        flightNumber: flightInfo.flight_number || flightInfo.flight_iata,
+        departure: flightInfo.departure_airport || flightInfo.origin,
+        arrival: flightInfo.arrival_airport || flightInfo.destination,
+      });
       
       // 提取延誤信息
-      const isDelayed = flightInfo.delay || flightInfo.delayed || false;
-      const delayMinutes = flightInfo.delay_minutes || 0;
+      const isDelayed = flightInfo.delay || flightInfo.delayed || flightInfo.is_delayed || false;
+      const delayMinutes = flightInfo.delay_minutes || flightInfo.delay_min || 0;
       
-      // 提取機場信息
-      const departure = flightInfo.departure_airport || {};
-      const arrival = flightInfo.arrival_airport || {};
+      // 提取機場信息（嘗試多種可能的字段名）
+      const departure = flightInfo.departure_airport || flightInfo.origin || flightInfo.dep || {};
+      const arrival = flightInfo.arrival_airport || flightInfo.destination || flightInfo.arr || {};
+      
+      // 提取時間信息
+      const depTime = flightInfo.departure_time || flightInfo.dep_time || flightInfo.scheduled_departure;
+      const arrTime = flightInfo.arrival_time || flightInfo.arr_time || flightInfo.scheduled_arrival;
+      const depActual = flightInfo.actual_departure_time || flightInfo.actual_dep_time || flightInfo.dep_actual;
+      const arrActual = flightInfo.actual_arrival_time || flightInfo.actual_arr_time || flightInfo.arr_actual;
       
       return {
-        flightNumber: flightNumber,
+        flightNumber: flightInfo.flight_number || flightInfo.flight_iata || flightNumber,
         departure: {
-          airport: departure.id || departure.name || '',
-          city: departure.city || departure.location || '',
-          terminal: departure.terminal || undefined,
-          gate: departure.gate || undefined,
+          airport: departure.id || departure.iata || departure.code || departure.name || '',
+          city: departure.city || departure.location || departure.name || '',
+          terminal: departure.terminal || flightInfo.dep_terminal || undefined,
+          gate: departure.gate || flightInfo.dep_gate || undefined,
           checkInCounter: undefined,
         },
         arrival: {
-          airport: arrival.id || arrival.name || '',
-          city: arrival.city || arrival.location || '',
-          terminal: arrival.terminal || undefined,
-          gate: arrival.gate || undefined,
-          baggageClaim: undefined,
+          airport: arrival.id || arrival.iata || arrival.code || arrival.name || '',
+          city: arrival.city || arrival.location || arrival.name || '',
+          terminal: arrival.terminal || flightInfo.arr_terminal || undefined,
+          gate: arrival.gate || flightInfo.arr_gate || undefined,
+          baggageClaim: flightInfo.baggage_claim || undefined,
         },
-        status: isDelayed ? `延誤 ${delayMinutes} 分鐘` : '準時',
+        status: isDelayed ? `延誤 ${delayMinutes} 分鐘` : (flightInfo.status || '準時'),
         isDelayed: isDelayed,
         delayMinutes: delayMinutes,
         scheduledTime: {
-          departure: flightInfo.departure_time || undefined,
-          arrival: flightInfo.arrival_time || undefined,
+          departure: depTime || undefined,
+          arrival: arrTime || undefined,
         },
         actualTime: {
-          departure: flightInfo.actual_departure_time || undefined,
-          arrival: flightInfo.actual_arrival_time || undefined,
+          departure: depActual || undefined,
+          arrival: arrActual || undefined,
         },
-        // 機場座標（用於地圖顯示）
-        departureCoordinates: departure.coordinates || undefined,
-        arrivalCoordinates: arrival.coordinates || undefined,
+        // 機場座標（用於地圖顯示，如果 API 提供）
+        departureCoordinates: departure.coordinates || departure.lat_lng || undefined,
+        arrivalCoordinates: arrival.coordinates || arrival.lat_lng || undefined,
       };
     }
     
-    throw new Error('未找到航班信息');
+    // 如果沒有找到航班，記錄詳細信息以便調試
+    console.warn('未找到航班信息，API 響應結構:', {
+      hasData: !!data,
+      dataKeys: data ? Object.keys(data) : [],
+      hasBestFlights: !!data.best_flights,
+      hasOtherFlights: !!data.other_flights,
+      hasFlights: !!data.flights,
+    });
+    
+    throw new Error('未找到航班信息。請確認航班編號是否正確，或該航班可能不在 SerpAPI 數據庫中。');
   } catch (error: any) {
     console.error('SerpAPI Google Flights API 錯誤:', {
       message: error.message,
       stack: error.stack,
     });
-    throw error;
+    // 如果是我們自己拋出的錯誤，直接拋出
+    if (error.message && (error.message.includes('SerpAPI') || error.message.includes('API'))) {
+      throw error;
+    }
+    // 其他錯誤包裝一下
+    throw new Error(`查詢航班信息失敗: ${error.message || '未知錯誤'}`);
   }
 }
 
@@ -187,4 +237,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
