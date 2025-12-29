@@ -177,6 +177,14 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       const airlineCode = flight.airline_code || '';
       const flightNum = flight.flight_number || flightNumber;
       
+      // 提取行李信息（如果 SerpAPI 提供）
+      const baggagePrices = flight.baggage_prices || [];
+      const baggageInfo = baggagePrices.length > 0 ? {
+        baggageAllowance: baggagePrices.join(', '),
+        carryOn: baggagePrices.find((p: string) => p.toLowerCase().includes('carry-on') || p.toLowerCase().includes('carryon')) || undefined,
+        checkedBaggage: baggagePrices.find((p: string) => !p.toLowerCase().includes('carry-on') && !p.toLowerCase().includes('carryon')) || undefined,
+      } : undefined;
+      
       return {
         flightNumber: `${airlineCode}${flightNum}` || flightNumber,
         departure: {
@@ -204,6 +212,8 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
           departure: undefined,
           arrival: undefined,
         },
+        // 行李信息
+        baggageInfo: baggageInfo,
         // 額外信息
         airline: airline,
         duration: flight.duration, // 飛行時長（分鐘）

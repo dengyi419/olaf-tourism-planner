@@ -36,6 +36,12 @@ interface FlightInfo {
     departure?: string;
     arrival?: string;
   };
+  baggageInfo?: {
+    baggageClaim?: string;
+    baggageAllowance?: string;
+    carryOn?: string;
+    checkedBaggage?: string;
+  };
 }
 
 export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProps) {
@@ -255,6 +261,11 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                         報到櫃檯：{flightInfo.departure.checkInCounter}
                       </div>
                     )}
+                    {!flightInfo.departure.checkInCounter && (
+                      <div className="text-[10px] opacity-50 italic">
+                        提示：報到櫃檯信息請以機場公告為準
+                      </div>
+                    )}
                     {flightInfo.departure.gate && (
                       <div className="flex items-center gap-1">
                         <DoorOpen className="w-3 h-3" />
@@ -300,6 +311,42 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                     )}
                   </div>
                 </div>
+
+                {/* 行李資訊 */}
+                {(flightInfo.baggageInfo || flightInfo.arrival.baggageClaim) && (
+                  <div className="mt-4 pt-4 border-t-2 border-black">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Luggage className="w-4 h-4" />
+                      <span className="text-xs font-bold">行李資訊</span>
+                    </div>
+                    <div className="pl-6 space-y-1 text-xs">
+                      {flightInfo.arrival.baggageClaim && (
+                        <div className="flex items-center gap-1">
+                          <span>行李轉盤：</span>
+                          <span className="font-bold">{flightInfo.arrival.baggageClaim}</span>
+                        </div>
+                      )}
+                      {flightInfo.baggageInfo?.baggageAllowance && (
+                        <div>
+                          <span>行李限額：</span>
+                          <span className="font-bold">{flightInfo.baggageInfo.baggageAllowance}</span>
+                        </div>
+                      )}
+                      {flightInfo.baggageInfo?.carryOn && (
+                        <div>
+                          <span>隨身行李：</span>
+                          <span className="font-bold">{flightInfo.baggageInfo.carryOn}</span>
+                        </div>
+                      )}
+                      {flightInfo.baggageInfo?.checkedBaggage && (
+                        <div>
+                          <span>託運行李：</span>
+                          <span className="font-bold">{flightInfo.baggageInfo.checkedBaggage}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Google Maps 路線圖（僅在使用 SerpAPI 時顯示） */}
