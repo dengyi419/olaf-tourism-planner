@@ -302,6 +302,22 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                   </div>
                 </div>
 
+                {/* 飛機型號資訊 */}
+                {flightInfo.aircraft && (
+                  <div className="mt-4 pt-4 border-t-2 border-black">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Plane className="w-4 h-4" />
+                      <span className="text-xs font-bold">{t('flight.aircraft')}</span>
+                    </div>
+                    <div className="pl-6 text-xs">
+                      <span className="font-bold">{flightInfo.aircraft.name || flightInfo.aircraft.code || ''}</span>
+                      {flightInfo.aircraft.code && flightInfo.aircraft.name && (
+                        <span className="opacity-70 ml-2">({flightInfo.aircraft.code})</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Extensions 資訊（行李、Wi-Fi等） */}
                 {flightInfo.extensions && (
                   <div className="mt-4 p-3 bg-blue-50 border-2 border-blue-300 rounded">
