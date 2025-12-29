@@ -96,7 +96,7 @@ ${excludedPlaces}
     }
     
     // 處理多個地點的情況（如果 destination 包含逗號或分隔符）
-    const destinations = destination.split(/[,，、]/).map(d => d.trim()).filter(d => d);
+    const destinations = destination.split(/[,，、]/).map((d: string) => d.trim()).filter((d: string) => d);
     const destinationText = destinations.length > 1 
       ? `${destinations.join('、')}（共 ${destinations.length} 個地點）`
       : destination;
