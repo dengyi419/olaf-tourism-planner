@@ -511,6 +511,13 @@ export async function POST(request: NextRequest) {
           } catch (err) {
             console.warn('無法獲取 AirLabs 完整資訊:', err);
           }
+
+          // 如果前面的 getAirportInfoFromAirLabs 沒有拿到機場代碼，但這裡拿到了完整航班資訊
+          // 則改用 airLabsFlightInfo 中的 dep_iata / arr_iata 作為 SerpAPI 的 departure_id / arrival_id
+          if ((!depAirport || !arrAirport) && airLabsFlightInfo) {
+            depAirport = airLabsFlightInfo.dep_iata || airLabsFlightInfo.dep_icao || depAirport;
+            arrAirport = airLabsFlightInfo.arr_iata || airLabsFlightInfo.arr_icao || arrAirport;
+          }
         }
         
         if (!depAirport || !arrAirport) {
