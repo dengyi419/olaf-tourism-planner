@@ -7,9 +7,11 @@ export default function ApiKeySettings() {
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
   const [airLabsApiKey, setAirLabsApiKey] = useState('');
+  const [serpApiKey, setSerpApiKey] = useState('');
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showMapsKey, setShowMapsKey] = useState(false);
   const [showAirLabsKey, setShowAirLabsKey] = useState(false);
+  const [showSerpApiKey, setShowSerpApiKey] = useState(false);
   const [saved, setSaved] = useState(false);
 
   // 載入已保存的 API keys
@@ -18,9 +20,11 @@ export default function ApiKeySettings() {
       const savedGeminiKey = localStorage.getItem('user_gemini_api_key') || '';
       const savedMapsKey = localStorage.getItem('user_google_maps_api_key') || '';
       const savedAirLabsKey = localStorage.getItem('user_airlabs_api_key') || '';
+      const savedSerpApiKey = localStorage.getItem('user_serpapi_api_key') || '';
       setGeminiApiKey(savedGeminiKey);
       setGoogleMapsApiKey(savedMapsKey);
       setAirLabsApiKey(savedAirLabsKey);
+      setSerpApiKey(savedSerpApiKey);
     }
   }, []);
 
@@ -29,6 +33,7 @@ export default function ApiKeySettings() {
       localStorage.setItem('user_gemini_api_key', geminiApiKey);
       localStorage.setItem('user_google_maps_api_key', googleMapsApiKey);
       localStorage.setItem('user_airlabs_api_key', airLabsApiKey);
+      localStorage.setItem('user_serpapi_api_key', serpApiKey);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Search, Plane, MapPin, DoorOpen, Luggage } from 'lucide-react';
+import { X, Search, Plane, MapPin, DoorOpen, Luggage, AlertCircle } from 'lucide-react';
+import FlightRouteMap from './FlightRouteMap';
 
 interface FlightInfoModalProps {
   isOpen: boolean;
@@ -25,7 +26,13 @@ interface FlightInfo {
     baggageClaim?: string;
   };
   status?: string;
+  isDelayed?: boolean;
+  delayMinutes?: number;
   scheduledTime?: {
+    departure?: string;
+    arrival?: string;
+  };
+  actualTime?: {
     departure?: string;
     arrival?: string;
   };
@@ -43,6 +50,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [flightInfo, setFlightInfo] = useState<FlightInfo | null>(null);
+  const [useSerpAPI, setUseSerpAPI] = useState(false); // 選擇使用 SerpAPI 還是 AirLabs
 
   const handleSearch = async () => {
     if (!flightNumber.trim()) {
@@ -55,12 +63,15 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
     setFlightInfo(null);
 
     try {
-      // 獲取用戶的 AirLabs API key（如果已設定）
+      // 根據選擇的 API 獲取對應的 API key
+      const apiKeyName = useSerpAPI ? 'user_serpapi_api_key' : 'user_airlabs_api_key';
       const userApiKey = typeof window !== 'undefined' 
-        ? localStorage.getItem('user_airlabs_api_key') || ''
+        ? localStorage.getItem(apiKeyName) || ''
         : '';
 
-      const response = await fetch('/api/flight-info', {
+      const apiEndpoint = useSerpAPI ? '/api/flight-info-serpapi' : '/api/flight-info';
+
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -133,7 +144,30 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
               min={getMinDate()} // 可以選擇前兩天
             />
             <p className="text-[10px] opacity-70 mt-1">
-              注意：AirLabs API 目前不支持日期參數，將查詢實時航班信息
+              {useSerpAPI 
+                ? 'SerpAPI 支持日期查詢，將查詢指定日期的航班信息'
+                : '注意：AirLabs API 目前不支持日期參數，將查詢實時航班信息'}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs mb-2">查詢方式</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setUseSerpAPI(false)}
+                className={`pixel-button flex-1 py-2 text-xs ${!useSerpAPI ? 'bg-blue-200' : ''}`}
+              >
+                AirLabs
+              </button>
+              <button
+                onClick={() => setUseSerpAPI(true)}
+                className={`pixel-button flex-1 py-2 text-xs ${useSerpAPI ? 'bg-blue-200' : ''}`}
+              >
+                SerpAPI (含延誤資訊)
+              </button>
+            </div>
+            <p className="text-[10px] opacity-70 mt-1">
+              SerpAPI 提供延誤狀態和地圖路線顯示
             </p>
           </div>
 
@@ -167,11 +201,25 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-bold">{flightInfo.flightNumber}</h3>
                   {flightInfo.status && (
-                    <span className="text-xs px-2 py-1 bg-blue-100 border border-black">
+                    <span className={`text-xs px-2 py-1 border border-black ${
+                      flightInfo.isDelayed 
+                        ? 'bg-red-100 text-red-800' 
+                        : 'bg-green-100 text-green-800'
+                    }`}>
                       {flightInfo.status}
                     </span>
                   )}
                 </div>
+
+                {/* 延誤警告 */}
+                {flightInfo.isDelayed && flightInfo.delayMinutes && (
+                  <div className="mb-3 p-2 bg-red-100 border-2 border-red-500 rounded flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                    <span className="text-xs font-bold text-red-800">
+                      航班延誤 {flightInfo.delayMinutes} 分鐘
+                    </span>
+                  </div>
+                )}
 
                 {/* 出發信息 */}
                 <div className="mb-4 pb-4 border-b-2 border-black">
@@ -183,7 +231,14 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                     <div className="font-bold">{flightInfo.departure.airport}</div>
                     <div className="opacity-70">{flightInfo.departure.city}</div>
                     {flightInfo.scheduledTime?.departure && (
-                      <div className="opacity-70">時間：{flightInfo.scheduledTime.departure}</div>
+                      <div className="opacity-70">
+                        計劃時間：{flightInfo.scheduledTime.departure}
+                      </div>
+                    )}
+                    {flightInfo.actualTime?.departure && (
+                      <div className={flightInfo.isDelayed ? 'text-red-600 font-bold' : 'opacity-70'}>
+                        實際時間：{flightInfo.actualTime.departure}
+                      </div>
                     )}
                     {flightInfo.departure.terminal && (
                       <div>航廈：{flightInfo.departure.terminal}</div>
@@ -213,7 +268,14 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                     <div className="font-bold">{flightInfo.arrival.airport}</div>
                     <div className="opacity-70">{flightInfo.arrival.city}</div>
                     {flightInfo.scheduledTime?.arrival && (
-                      <div className="opacity-70">時間：{flightInfo.scheduledTime.arrival}</div>
+                      <div className="opacity-70">
+                        計劃時間：{flightInfo.scheduledTime.arrival}
+                      </div>
+                    )}
+                    {flightInfo.actualTime?.arrival && (
+                      <div className={flightInfo.isDelayed ? 'text-red-600 font-bold' : 'opacity-70'}>
+                        實際時間：{flightInfo.actualTime.arrival}
+                      </div>
                     )}
                     {flightInfo.arrival.terminal && (
                       <div>航廈：{flightInfo.arrival.terminal}</div>
@@ -233,6 +295,19 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                   </div>
                 </div>
               </div>
+
+              {/* Google Maps 路線圖（僅在使用 SerpAPI 時顯示） */}
+              {useSerpAPI && flightInfo.departure.airport && flightInfo.arrival.airport && (
+                <div className="pixel-card p-4 border-2 border-black">
+                  <h4 className="text-xs font-bold mb-2">機場路線圖</h4>
+                  <FlightRouteMap
+                    departureAirport={flightInfo.departure.airport}
+                    arrivalAirport={flightInfo.arrival.airport}
+                    departureCity={flightInfo.departure.city}
+                    arrivalCity={flightInfo.arrival.city}
+                  />
+                </div>
+              )}
             </div>
           )}
 
