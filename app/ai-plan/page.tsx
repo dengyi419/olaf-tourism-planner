@@ -183,6 +183,17 @@ export default function AIPlanPage() {
       // 更新當前行程（會生成新 ID）
       updateCurrentTrip(settings, itineraryWithDates);
       
+      // 確保行程名稱被保存到 currentTrip
+      const currentTrip = useStorageStore.getState().currentTrip;
+      if (currentTrip && tripName.trim()) {
+        useStorageStore.setState({
+          currentTrip: {
+            ...currentTrip,
+            name: tripName.trim(),
+          },
+        });
+      }
+      
       // 跳轉到規劃頁面
       router.push('/plan');
     } catch (err: any) {

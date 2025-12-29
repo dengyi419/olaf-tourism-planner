@@ -6,7 +6,7 @@ import RouteMap from './RouteMap';
 import LocationAutocomplete from './LocationAutocomplete';
 import { Plus, Trash2 } from 'lucide-react';
 import { useTravelStore } from '@/store/useTravelStore';
-import { useState } from 'react';
+import { useState, useEffect as ReactUseEffect } from 'react';
 
 interface DaySectionProps {
   day: DayItinerary;
@@ -45,8 +45,21 @@ export default function DaySection({ day }: DaySectionProps) {
     };
 
     addActivity(day.dayId, activity);
+    
+    // 計算下一個活動的時間：當前時間 + 1小時
+    const nextTime = (() => {
+      const currentTime = newActivity.time || '09:00';
+      const [hours, minutes] = currentTime.split(':').map(Number);
+      const nextDate = new Date();
+      nextDate.setHours(hours, minutes, 0, 0);
+      nextDate.setHours(nextDate.getHours() + 1);
+      const nextHours = nextDate.getHours().toString().padStart(2, '0');
+      const nextMinutes = nextDate.getMinutes().toString().padStart(2, '0');
+      return `${nextHours}:${nextMinutes}`;
+    })();
+    
     setNewActivity({
-      time: '09:00',
+      time: nextTime,
       locationName: '',
       description: '',
       googleMapQuery: '',

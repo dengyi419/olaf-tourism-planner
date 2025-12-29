@@ -7,6 +7,10 @@ import AuthProvider from '@/components/AuthProvider'
 export const metadata: Metadata = {
   title: 'Olaf tourism planner - AI 智能旅遊規劃',
   description: '結合 AI 智能排程、地圖整合與記帳管理的旅遊規劃工具',
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
 }
 
 export default function RootLayout({
