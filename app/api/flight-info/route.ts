@@ -74,14 +74,45 @@ async function queryAviationStack(flightNumber: string, apiKey: string, flightDa
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      if (response.status === 401 || response.status === 403) {
-        throw new Error('AviationStack API Key 無效或已過期');
+      let errorData: any = {};
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        // 如果無法解析 JSON，使用空對象
       }
+      
+      // 記錄詳細錯誤信息以便調試
+      console.error('AviationStack API 錯誤:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorData: errorData,
+      });
+      
+      // 檢查是否是認證相關錯誤
+      if (response.status === 401) {
+        // 401 通常是 API Key 無效
+        throw new Error('AviationStack API Key 無效。請確認 API Key 是否正確。');
+      }
+      
+      if (response.status === 403) {
+        // 403 可能是配額用完、權限不足或 API Key 問題
+        if (errorData.error?.info?.includes('quota') || errorData.error?.info?.includes('limit')) {
+          throw new Error('AviationStack API 配額已用完或達到請求限制。請檢查您的訂閱計劃。');
+        }
+        throw new Error('AviationStack API 權限不足。請確認 API Key 是否有效且訂閱計劃允許此操作。');
+      }
+      
+      // 處理 API 返回的錯誤信息
       if (errorData.error?.info) {
         throw new Error(`AviationStack API 錯誤: ${errorData.error.info}`);
       }
-      throw new Error(`AviationStack API 錯誤: ${response.status}`);
+      
+      if (errorData.error?.message) {
+        throw new Error(`AviationStack API 錯誤: ${errorData.error.message}`);
+      }
+      
+      // 通用錯誤
+      throw new Error(`AviationStack API 錯誤 (${response.status}): ${response.statusText}`);
     }
 
     const data = await response.json();
