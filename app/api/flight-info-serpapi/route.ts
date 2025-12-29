@@ -196,22 +196,32 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       const normalizedTargetFlightNumber = flightNumber.replace(/\s+/g, '').toUpperCase();
 
       const findMatchingOptionAndLeg = (options: any[]): { option: any; leg: any } | null => {
+        const allFlightNumbers: string[] = [];
         for (const opt of options) {
           const legs = Array.isArray(opt.flights) && opt.flights.length > 0 ? opt.flights : [opt];
           for (const leg of legs) {
             const rawFn = (leg.flight_number || leg.flight_iata || '').toString();
             const normalizedFn = rawFn.replace(/\s+/g, '').toUpperCase();
+            allFlightNumbers.push(normalizedFn);
             if (normalizedFn === normalizedTargetFlightNumber) {
               return { option: opt, leg };
             }
           }
         }
+        console.log(`SerpAPI 返回的所有航班號: ${allFlightNumbers.join(', ')}，目標: ${normalizedTargetFlightNumber}`);
         return null;
       };
 
       const match = findMatchingOptionAndLeg(flights);
-      const option = match?.option || flights[0];
-      const leg = match?.leg || (Array.isArray(option.flights) && option.flights.length > 0 ? option.flights[0] : option);
+      
+      // 如果沒有找到完全匹配的航班，返回 null，讓調用者使用 AirLabs 數據
+      if (!match) {
+        console.log(`SerpAPI 中未找到航班 ${flightNumber}，將使用 AirLabs 數據`);
+        return null;
+      }
+      
+      const option = match.option;
+      const leg = match.leg;
 
       // 提取機場資訊（根據 SerpAPI 文檔格式）
       const departure = leg.departure_airport || leg.departure || {};
