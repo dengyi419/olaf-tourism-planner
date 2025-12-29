@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTravelStore } from '@/store/useTravelStore';
 import { useStorageStore } from '@/store/useStorageStore';
-import Clock from '@/components/Clock';
 import DaySection from '@/components/DaySection';
 import BudgetHeader from '@/components/BudgetHeader';
 import { Home, Trash2, Save } from 'lucide-react';
@@ -113,7 +112,6 @@ export default function HistoryPage() {
       <BudgetHeader 
         rightButtons={
           <>
-            <Clock />
             {selectedTrip && tripSettings && (
               <button
                 onClick={handleManualSave}

@@ -146,13 +146,6 @@ export default function Clock() {
           <div className="text-[10px] mb-1" suppressHydrationWarning>
             {formatDate(today)}
           </div>
-          {/* 行程日期 - 較小字體 */}
-          {tripSettings?.startDate && displayDateStr !== todayDateStr && (
-            <div className="text-[8px] text-gray-600 mb-1" suppressHydrationWarning>
-              {formatDate(displayDate)}
-              <span className="ml-1 text-[6px] text-gray-500">(行程開始日)</span>
-            </div>
-          )}
         </div>
       </div>
       
