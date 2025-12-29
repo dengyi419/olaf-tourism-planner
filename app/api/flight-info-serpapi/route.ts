@@ -169,16 +169,21 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     // 記錄完整的航班數據結構以便調試
     if (flights.length > 0) {
       const sampleFlight = flights[0];
-      console.log('SerpAPI 航班數據結構示例:', {
+      console.log('SerpAPI 航班數據結構示例:', JSON.stringify({
         flightNumber: sampleFlight.flight_number,
         aircraft: sampleFlight.aircraft,
+        airplane: sampleFlight.airplane,
         included_baggage: sampleFlight.included_baggage,
         baggage_prices: sampleFlight.baggage_prices,
         baggage: sampleFlight.baggage,
+        departure_airport: sampleFlight.departure_airport,
+        arrival_airport: sampleFlight.arrival_airport,
         departure_time: sampleFlight.departure_time,
         arrival_time: sampleFlight.arrival_time,
+        dep_time: sampleFlight.dep_time,
+        arr_time: sampleFlight.arr_time,
         allKeys: Object.keys(sampleFlight),
-      });
+      }, null, 2).substring(0, 3000));
     }
     
     if (flights.length > 0) {
@@ -215,10 +220,22 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       const departureTime = parseSerpAPITime(departureTimeRaw);
       const arrivalTime = parseSerpAPITime(arrivalTimeRaw);
       
-      console.log('找到航班並提取數據:', {
+      console.log('找到航班並提取數據:', JSON.stringify({
         flightNumber: flight.flight_number || flight.flight_iata,
-        departure: departure.id || departure.name,
-        arrival: arrival.id || arrival.name,
+        departure: {
+          id: departure.id,
+          name: departure.name,
+          time: departure.time,
+          allKeys: Object.keys(departure),
+        },
+        arrival: {
+          id: arrival.id,
+          name: arrival.name,
+          time: arrival.time,
+          allKeys: Object.keys(arrival),
+        },
+        departureTimeRaw: departureTimeRaw,
+        arrivalTimeRaw: arrivalTimeRaw,
         departureTime: departureTime,
         arrivalTime: arrivalTime,
         departureTimeSource: departure.time ? 'departure.time' : 
@@ -228,11 +245,12 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
           (flight.arrival_time ? 'flight.arrival_time' : 
           (flight.arr_time ? 'flight.arr_time' : 'not found')),
         aircraft: flight.aircraft,
+        airplane: flight.airplane,
         included_baggage: flight.included_baggage,
         baggage_prices: flight.baggage_prices,
         baggage: flight.baggage,
         flightKeys: Object.keys(flight),
-      });
+      }, null, 2).substring(0, 3000));
       
       // 提取延誤資訊（SerpAPI 可能不直接提供延誤資訊，需要從其他字段推斷）
       // 注意：SerpAPI Google Flights 主要提供價格和路線資訊，延誤資訊可能需要其他 API

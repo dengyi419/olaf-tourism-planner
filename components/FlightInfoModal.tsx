@@ -270,10 +270,12 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                   <div className="pl-6 space-y-1 text-xs">
                     <div className="font-bold text-base">{flightInfo.arrival.airport}</div>
                     <div className="opacity-70">{flightInfo.arrival.city}</div>
-                    {flightInfo.scheduledTime?.arrival && (
-                      <div className="font-semibold text-sm">
+                    {flightInfo.scheduledTime?.arrival ? (
+                      <div className="font-semibold text-sm text-blue-600">
                         {flightInfo.scheduledTime.arrival}
                       </div>
+                    ) : (
+                      <div className="text-[10px] opacity-50 italic">時間資訊未提供</div>
                     )}
                     {flightInfo.actualTime?.arrival && (
                       <div className={flightInfo.isDelayed ? 'text-red-600 font-bold' : 'opacity-70'}>
