@@ -68,7 +68,7 @@ ${boardingPassInfo}
 直接輸出 SVG 代碼即可。
 `;
 
-    const modelNames = ['gemini-3-pro-image-preview', 'gemini-3-pro-preview', 'gemini-2.5-pro'];
+    const modelNames = ['gemini-2.5-flash-image', 'gemini-2.5-flash', 'gemini-2.5-pro'];
     let svgCode: string | undefined;
     let lastError: any = null;
 
