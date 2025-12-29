@@ -133,7 +133,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
               min={getMinDate()} // 可以選擇前兩天
             />
             <p className="text-[10px] opacity-70 mt-1">
-              選擇要查詢的航班日期（可選擇前兩天至未來日期，預設為今天）
+              注意：AirLabs API 目前不支持日期參數，將查詢實時航班信息
             </p>
           </div>
 
