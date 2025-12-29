@@ -125,7 +125,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <Plane className="w-6 h-6" />
-            <h2 className="text-xl">查詢航班信息</h2>
+            <h2 className="text-xl">{t('flight.title')}</h2>
           </div>
           <button
             onClick={onClose}
@@ -240,8 +240,8 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                         <AlertCircle className="w-4 h-4 text-yellow-600" />
                         <span className="text-xs text-yellow-800">
                           {isFutureDate 
-                            ? `您選擇的是未來日期（${flightDate}），實時狀態信息僅顯示當天數據`
-                            : `您選擇的是過去日期（${flightDate}），實時狀態信息僅顯示當天數據`}
+                            ? t('flight.dateWarning').replace('{date}', flightDate)
+                            : t('flight.dateWarningPast').replace('{date}', flightDate)}
                         </span>
                       </div>
                     );
@@ -254,7 +254,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                   <div className="mb-3 p-2 bg-red-100 border-2 border-red-500 rounded flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-red-600" />
                     <span className="text-xs font-bold text-red-800">
-                      航班延誤 {flightInfo.delayMinutes} 分鐘
+                      {language === 'zh-TW' ? `航班延誤 ${flightInfo.delayMinutes} 分鐘` : language === 'en' ? `Flight delayed ${flightInfo.delayMinutes} minutes` : language === 'ja' ? `フライト遅延 ${flightInfo.delayMinutes} 分` : `항공편 지연 ${flightInfo.delayMinutes}분`}
                     </span>
                   </div>
                 )}
@@ -263,39 +263,39 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                 <div className="mb-4 pb-4 border-b-2 border-black">
                   <div className="flex items-center gap-2 mb-2">
                     <MapPin className="w-4 h-4" />
-                    <span className="text-xs font-bold">出發</span>
+                    <span className="text-xs font-bold">{t('flight.departure')}</span>
                   </div>
                   <div className="pl-6 space-y-1 text-xs">
                     <div className="font-bold">{flightInfo.departure.airport}</div>
                     <div className="opacity-70">{flightInfo.departure.city}</div>
                     {flightInfo.scheduledTime?.departure && (
                       <div className="opacity-70">
-                        計劃時間：{flightInfo.scheduledTime.departure}
+                        {t('flight.scheduledTime')}：{flightInfo.scheduledTime.departure}
                       </div>
                     )}
                     {flightInfo.actualTime?.departure && (
                       <div className={flightInfo.isDelayed ? 'text-red-600 font-bold' : 'opacity-70'}>
-                        實際時間：{flightInfo.actualTime.departure}
+                        {t('flight.actualTime')}：{flightInfo.actualTime.departure}
                       </div>
                     )}
                     {flightInfo.departure.terminal && (
-                      <div>航廈：{flightInfo.departure.terminal}</div>
+                      <div>{t('flight.terminal')}：{flightInfo.departure.terminal}</div>
                     )}
                     {flightInfo.departure.checkInCounter && (
                       <div className="flex items-center gap-1">
                         <DoorOpen className="w-3 h-3" />
-                        報到櫃檯：{flightInfo.departure.checkInCounter}
+                        {t('flight.checkIn')}：{flightInfo.departure.checkInCounter}
                       </div>
                     )}
                     {!flightInfo.departure.checkInCounter && (
                       <div className="text-[10px] opacity-50 italic">
-                        提示：報到櫃檯信息請以機場公告為準
+                        {language === 'zh-TW' ? '提示：報到櫃檯信息請以機場公告為準' : language === 'en' ? 'Note: Check-in counter information is subject to airport announcements' : language === 'ja' ? '注意：チェックインカウンター情報は空港の案内に従ってください' : '참고: 체크인 카운터 정보는 공항 공지사항을 따릅니다'}
                       </div>
                     )}
                     {flightInfo.departure.gate && (
                       <div className="flex items-center gap-1">
                         <DoorOpen className="w-3 h-3" />
-                        登機門：{flightInfo.departure.gate}
+                        {t('flight.gate')}：{flightInfo.departure.gate}
                       </div>
                     )}
                   </div>
@@ -305,34 +305,34 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <MapPin className="w-4 h-4" />
-                    <span className="text-xs font-bold">抵達</span>
+                    <span className="text-xs font-bold">{t('flight.arrival')}</span>
                   </div>
                   <div className="pl-6 space-y-1 text-xs">
                     <div className="font-bold">{flightInfo.arrival.airport}</div>
                     <div className="opacity-70">{flightInfo.arrival.city}</div>
                     {flightInfo.scheduledTime?.arrival && (
                       <div className="opacity-70">
-                        計劃時間：{flightInfo.scheduledTime.arrival}
+                        {t('flight.scheduledTime')}：{flightInfo.scheduledTime.arrival}
                       </div>
                     )}
                     {flightInfo.actualTime?.arrival && (
                       <div className={flightInfo.isDelayed ? 'text-red-600 font-bold' : 'opacity-70'}>
-                        實際時間：{flightInfo.actualTime.arrival}
+                        {t('flight.actualTime')}：{flightInfo.actualTime.arrival}
                       </div>
                     )}
                     {flightInfo.arrival.terminal && (
-                      <div>航廈：{flightInfo.arrival.terminal}</div>
+                      <div>{t('flight.terminal')}：{flightInfo.arrival.terminal}</div>
                     )}
                     {flightInfo.arrival.gate && (
                       <div className="flex items-center gap-1">
                         <DoorOpen className="w-3 h-3" />
-                        登機門：{flightInfo.arrival.gate}
+                        {t('flight.gate')}：{flightInfo.arrival.gate}
                       </div>
                     )}
                     {flightInfo.arrival.baggageClaim && (
                       <div className="flex items-center gap-1">
                         <Luggage className="w-3 h-3" />
-                        行李轉盤：{flightInfo.arrival.baggageClaim}
+                        {t('flight.baggageClaim')}：{flightInfo.arrival.baggageClaim}
                       </div>
                     )}
                   </div>
@@ -391,7 +391,9 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
           )}
 
           <div className="text-xs opacity-70">
-            <p>提示：航班信息可能因實際情況而變動，請以機場公告為準。</p>
+            <p>
+              {language === 'zh-TW' ? '提示：航班信息可能因實際情況而變動，請以機場公告為準。' : language === 'en' ? 'Note: Flight information may change due to actual circumstances, please refer to airport announcements.' : language === 'ja' ? '注意：フライト情報は実際の状況により変更される場合があります。空港の案内に従ってください。' : '참고: 항공편 정보는 실제 상황에 따라 변경될 수 있습니다. 공항 공지사항을 참고하세요.'}
+            </p>
           </div>
         </div>
       </div>
