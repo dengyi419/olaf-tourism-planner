@@ -174,6 +174,11 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
         flightNumber: flight.flight_number || flight.flight_iata,
         departure: flight.departure_airport?.id || flight.departure_airport?.name,
         arrival: flight.arrival_airport?.id || flight.arrival_airport?.name,
+        aircraft: flight.aircraft,
+        included_baggage: flight.included_baggage,
+        baggage_prices: flight.baggage_prices,
+        baggage: flight.baggage,
+        flightKeys: Object.keys(flight),
       });
       
       // 提取機場資訊（根據 SerpAPI 文檔格式）
@@ -488,9 +493,20 @@ export async function POST(request: NextRequest) {
         }
         
         // 合併 SerpAPI 和 AirLabs 的數據
-        // SerpAPI 提供路線和價格資訊，AirLabs 提供實時狀態和延誤資訊
+        // SerpAPI 提供路線、價格、機型、行李資訊（優先使用）
+        // AirLabs 提供實時狀態、延誤資訊、登機門、行李轉盤（僅當 SerpAPI 沒有時使用，且僅限今天）
         if (airLabsFlightInfo && serpApiFlightInfo) {
-          // 解析 AirLabs 的時間格式
+          // 檢查查詢的日期是否是今天
+          const isToday = (() => {
+            if (!flightDate) return true;
+            const selectedDate = new Date(flightDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            selectedDate.setHours(0, 0, 0, 0);
+            return selectedDate.getTime() === today.getTime();
+          })();
+          
+          // 解析 AirLabs 的時間格式（僅用於今天的實時數據）
           const parseTime = (timeValue: any) => {
             if (!timeValue) return undefined;
             if (typeof timeValue === 'string' && timeValue.includes(' ')) {
@@ -505,52 +521,86 @@ export async function POST(request: NextRequest) {
             return undefined;
           };
           
-          const depTime = parseTime(airLabsFlightInfo.dep_time || airLabsFlightInfo.dep_time_ts);
-          const arrTime = parseTime(airLabsFlightInfo.arr_time || airLabsFlightInfo.arr_time_ts);
-          const depActual = parseTime(airLabsFlightInfo.dep_actual || airLabsFlightInfo.dep_actual_ts);
-          const arrActual = parseTime(airLabsFlightInfo.arr_actual || airLabsFlightInfo.arr_actual_ts);
+          // 對於未來日期，不使用 AirLabs 的時間數據（因為 AirLabs 只能查詢當天）
+          // 對於今天，可以使用 AirLabs 的實時數據
+          let depTime: Date | undefined;
+          let arrTime: Date | undefined;
+          let depActual: Date | undefined;
+          let arrActual: Date | undefined;
           
-          // 計算延誤時間（分鐘）
-          const isDelayed = depActual && depTime ? depActual.getTime() > depTime.getTime() : false;
-          const delayMinutes = isDelayed && depActual && depTime 
-            ? Math.round((depActual.getTime() - depTime.getTime()) / (1000 * 60))
-            : 0;
+          if (isToday) {
+            // 今天是今天，可以使用 AirLabs 的實時數據
+            depTime = parseTime(airLabsFlightInfo.dep_time || airLabsFlightInfo.dep_time_ts);
+            arrTime = parseTime(airLabsFlightInfo.arr_time || airLabsFlightInfo.arr_time_ts);
+            depActual = parseTime(airLabsFlightInfo.dep_actual || airLabsFlightInfo.dep_actual_ts);
+            arrActual = parseTime(airLabsFlightInfo.arr_actual || airLabsFlightInfo.arr_actual_ts);
+          }
+          
+          // 優先使用 SerpAPI 的時間數據，如果沒有再使用 AirLabs（僅限今天）
+          const scheduledDeparture = serpApiFlightInfo.scheduledTime?.departure || 
+            (depTime ? depTime.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined);
+          const scheduledArrival = serpApiFlightInfo.scheduledTime?.arrival || 
+            (arrTime ? arrTime.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined);
+          const actualDeparture = serpApiFlightInfo.actualTime?.departure || 
+            (depActual ? depActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined);
+          const actualArrival = serpApiFlightInfo.actualTime?.arrival || 
+            (arrActual ? arrActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined);
+          
+          // 計算延誤時間（僅限今天，使用 AirLabs 的實時數據）
+          let isDelayed = serpApiFlightInfo.isDelayed || false;
+          let delayMinutes = serpApiFlightInfo.delayMinutes || 0;
+          
+          if (isToday && depActual && depTime) {
+            const calculatedDelay = depActual.getTime() > depTime.getTime();
+            if (calculatedDelay) {
+              isDelayed = true;
+              delayMinutes = Math.round((depActual.getTime() - depTime.getTime()) / (1000 * 60));
+            }
+          }
           
           return NextResponse.json({
             ...serpApiFlightInfo,
             departure: {
               ...serpApiFlightInfo.departure,
-              airport: airLabsFlightInfo.dep_iata || serpApiFlightInfo.departure.airport,
-              city: airLabsFlightInfo.dep_city || airLabsFlightInfo.dep_name || serpApiFlightInfo.departure.city,
-              terminal: airLabsFlightInfo.dep_terminal || serpApiFlightInfo.departure.terminal,
-              gate: airLabsFlightInfo.dep_gate || serpApiFlightInfo.departure.gate,
+              // 優先使用 SerpAPI 的機場代碼，如果沒有再使用 AirLabs
+              airport: serpApiFlightInfo.departure.airport || airLabsFlightInfo.dep_iata || '',
+              city: serpApiFlightInfo.departure.city || airLabsFlightInfo.dep_city || airLabsFlightInfo.dep_name || '',
+              // 登機門和航廈僅限今天使用 AirLabs 的實時數據
+              terminal: (isToday ? airLabsFlightInfo.dep_terminal : undefined) || serpApiFlightInfo.departure.terminal,
+              gate: (isToday ? airLabsFlightInfo.dep_gate : undefined) || serpApiFlightInfo.departure.gate,
             },
             arrival: {
               ...serpApiFlightInfo.arrival,
-              airport: airLabsFlightInfo.arr_iata || serpApiFlightInfo.arrival.airport,
-              city: airLabsFlightInfo.arr_city || airLabsFlightInfo.arr_name || serpApiFlightInfo.arrival.city,
-              terminal: airLabsFlightInfo.arr_terminal || serpApiFlightInfo.arrival.terminal,
-              gate: airLabsFlightInfo.arr_gate || serpApiFlightInfo.arrival.gate,
-              baggageClaim: airLabsFlightInfo.arr_baggage || serpApiFlightInfo.arrival.baggageClaim,
+              // 優先使用 SerpAPI 的機場代碼，如果沒有再使用 AirLabs
+              airport: serpApiFlightInfo.arrival.airport || airLabsFlightInfo.arr_iata || '',
+              city: serpApiFlightInfo.arrival.city || airLabsFlightInfo.arr_city || airLabsFlightInfo.arr_name || '',
+              // 登機門和航廈僅限今天使用 AirLabs 的實時數據
+              terminal: (isToday ? airLabsFlightInfo.arr_terminal : undefined) || serpApiFlightInfo.arrival.terminal,
+              gate: (isToday ? airLabsFlightInfo.arr_gate : undefined) || serpApiFlightInfo.arrival.gate,
+              // 行李轉盤僅限今天使用 AirLabs 的實時數據
+              baggageClaim: (isToday ? airLabsFlightInfo.arr_baggage : undefined) || serpApiFlightInfo.arrival.baggageClaim,
             },
-            status: airLabsFlightInfo.status || (isDelayed ? `延誤 ${delayMinutes} 分鐘` : '準時'),
-            isDelayed: isDelayed || airLabsFlightInfo.status === 'delayed',
+            status: (isToday && airLabsFlightInfo.status) ? airLabsFlightInfo.status : 
+              (isDelayed ? `延誤 ${delayMinutes} 分鐘` : serpApiFlightInfo.status || '準時'),
+            isDelayed: isDelayed,
             delayMinutes: delayMinutes,
             scheduledTime: {
-              departure: depTime ? depTime.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : serpApiFlightInfo.scheduledTime?.departure,
-              arrival: arrTime ? arrTime.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : serpApiFlightInfo.scheduledTime?.arrival,
+              departure: scheduledDeparture,
+              arrival: scheduledArrival,
             },
             actualTime: {
-              departure: depActual ? depActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : serpApiFlightInfo.actualTime?.departure,
-              arrival: arrActual ? arrActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : serpApiFlightInfo.actualTime?.arrival,
+              departure: actualDeparture,
+              arrival: actualArrival,
             },
-            // 合併行李資訊：優先使用 SerpAPI 的行李限額資訊，AirLabs 的行李轉盤資訊
+            // 合併行李資訊：優先使用 SerpAPI 的行李資訊，AirLabs 的行李轉盤僅限今天
             baggageInfo: (() => {
               const merged: any = {};
+              // 優先使用 SerpAPI 的行李資訊
               if (serpApiFlightInfo.baggageInfo) {
                 Object.assign(merged, serpApiFlightInfo.baggageInfo);
               }
-              if (airLabsFlightInfo.arr_baggage) {
+              // 行李轉盤僅限今天使用 AirLabs 的實時數據
+              if (isToday && airLabsFlightInfo.arr_baggage) {
                 merged.baggageClaim = airLabsFlightInfo.arr_baggage;
               }
               // 如果只有行李轉盤資訊，也返回
@@ -559,11 +609,11 @@ export async function POST(request: NextRequest) {
               }
               return Object.keys(merged).length > 0 ? merged : undefined;
             })(),
-            // 合併飛機型號：優先使用 AirLabs 的飛機資訊
-            aircraft: airLabsFlightInfo.aircraft_icao || airLabsFlightInfo.aircraft_iata ? {
+            // 合併飛機型號：優先使用 SerpAPI 的飛機資訊
+            aircraft: serpApiFlightInfo.aircraft || (airLabsFlightInfo.aircraft_icao || airLabsFlightInfo.aircraft_iata ? {
               code: airLabsFlightInfo.aircraft_icao || airLabsFlightInfo.aircraft_iata,
               name: airLabsFlightInfo.aircraft_name || undefined,
-            } : serpApiFlightInfo.aircraft,
+            } : undefined),
           });
         }
         
