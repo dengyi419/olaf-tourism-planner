@@ -52,11 +52,18 @@ const FLIGHT_DATABASE: Record<string, any> = {
 // AviationStack API 查詢函數
 async function queryAviationStack(flightNumber: string, apiKey: string, flightDate?: string) {
   try {
+    // 清理 API Key（去除前後空格和換行符）
+    const cleanedApiKey = apiKey.trim().replace(/\s+/g, '');
+    
+    if (!cleanedApiKey) {
+      throw new Error('API Key 為空');
+    }
+    
     // AviationStack API 端點
     // API 文檔：https://aviationstack.com/documentation
     const baseUrl = 'https://api.aviationstack.com/v1/flights';
     const params = new URLSearchParams({
-      access_key: apiKey,
+      access_key: cleanedApiKey,
       flight_iata: flightNumber,
       limit: '1',
     });
