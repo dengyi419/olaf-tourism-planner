@@ -132,6 +132,9 @@ async function queryAirLabs(flightNumber: string, apiKey: string, flightDate?: s
 
     const data = await response.json();
     
+    // 記錄完整的 API 響應以便調試
+    console.log('AirLabs API 響應:', JSON.stringify(data, null, 2));
+    
     // 檢查 API 返回的錯誤（即使 HTTP 狀態碼是 200）
     if (data.error) {
       console.error('AirLabs API 返回錯誤:', data.error);
@@ -143,8 +146,12 @@ async function queryAirLabs(flightNumber: string, apiKey: string, flightDate?: s
     }
     
     // 處理 AirLabs 返回的數據
-    if (data.response && data.response.length > 0) {
-      const flight = data.response[0]; // 使用第一個結果
+    // AirLabs API 可能返回 response 數組，或者直接返回數據
+    const flightData = data.response || data;
+    const flights = Array.isArray(flightData) ? flightData : (flightData.flights || []);
+    
+    if (flights.length > 0) {
+      const flight = flights[0]; // 使用第一個結果
       
       // 轉換為我們的格式
       return {
