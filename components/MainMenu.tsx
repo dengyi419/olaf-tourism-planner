@@ -23,6 +23,7 @@ export default function MainMenu() {
   const [showTripList, setShowTripList] = useState(false);
   const [showCurrentTripModal, setShowCurrentTripModal] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
+  const [showFlightModal, setShowFlightModal] = useState(false);
 
   useEffect(() => {
     // 如果已登入，從服務器同步行程
@@ -167,6 +168,13 @@ export default function MainMenu() {
               <Camera className="w-4 h-4 inline mr-1" />
               <span>翻譯</span>
             </button>
+            <button
+              onClick={() => setShowFlightModal(true)}
+              className="pixel-button px-3 py-2 text-xs whitespace-nowrap flex-shrink-0"
+            >
+              <Plane className="w-4 h-4 inline mr-1" />
+              <span>航班</span>
+            </button>
             <LanguageSelector />
             <div className="flex-shrink-0">
               <UserMenu />
@@ -269,6 +277,14 @@ export default function MainMenu() {
               <Settings className="w-4 h-4 inline mr-2" />
               4. {t('mainMenu.settings')}
             </button>
+
+            <button
+              onClick={() => setShowFlightModal(true)}
+              className="pixel-button w-full py-6 text-sm"
+            >
+              <Plane className="w-4 h-4 inline mr-2" />
+              5. 查詢航班信息
+            </button>
           </div>
         </div>
       </div>
@@ -283,6 +299,12 @@ export default function MainMenu() {
       <CameraTranslateModal 
         isOpen={showCameraModal} 
         onClose={() => setShowCameraModal(false)} 
+      />
+
+      {/* 航班信息模態框 */}
+      <FlightInfoModal 
+        isOpen={showFlightModal} 
+        onClose={() => setShowFlightModal(false)} 
       />
     </div>
   );
