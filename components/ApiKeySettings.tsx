@@ -6,8 +6,10 @@ import { Settings, Save, Eye, EyeOff } from 'lucide-react';
 export default function ApiKeySettings() {
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
+  const [flightAwareApiKey, setFlightAwareApiKey] = useState('');
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showMapsKey, setShowMapsKey] = useState(false);
+  const [showFlightAwareKey, setShowFlightAwareKey] = useState(false);
   const [saved, setSaved] = useState(false);
 
   // 載入已保存的 API keys
@@ -15,8 +17,10 @@ export default function ApiKeySettings() {
     if (typeof window !== 'undefined') {
       const savedGeminiKey = localStorage.getItem('user_gemini_api_key') || '';
       const savedMapsKey = localStorage.getItem('user_google_maps_api_key') || '';
+      const savedFlightAwareKey = localStorage.getItem('user_flightaware_api_key') || '';
       setGeminiApiKey(savedGeminiKey);
       setGoogleMapsApiKey(savedMapsKey);
+      setFlightAwareApiKey(savedFlightAwareKey);
     }
   }, []);
 
@@ -24,6 +28,7 @@ export default function ApiKeySettings() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('user_gemini_api_key', geminiApiKey);
       localStorage.setItem('user_google_maps_api_key', googleMapsApiKey);
+      localStorage.setItem('user_flightaware_api_key', flightAwareApiKey);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       
@@ -128,6 +133,46 @@ export default function ApiKeySettings() {
           </p>
         </div>
 
+        <div>
+          <label className="block text-xs mb-2">
+            FlightAware API Key
+            <span className="text-[10px] opacity-70 ml-2">
+              (用於查詢實時航班信息)
+            </span>
+          </label>
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <input
+                type={showFlightAwareKey ? 'text' : 'password'}
+                value={flightAwareApiKey}
+                onChange={(e) => setFlightAwareApiKey(e.target.value)}
+                placeholder="輸入您的 FlightAware API Key"
+                className="pixel-input w-full px-3 py-2 text-sm pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowFlightAwareKey(!showFlightAwareKey)}
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+                title={showFlightAwareKey ? '隱藏' : '顯示'}
+              >
+                {showFlightAwareKey ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+          </div>
+          {flightAwareApiKey && !showFlightAwareKey && (
+            <p className="text-[10px] opacity-70 mt-1">
+              已輸入: {maskApiKey(flightAwareApiKey)}
+            </p>
+          )}
+          <p className="text-[10px] opacity-70 mt-1">
+            取得方式: <a href="https://flightaware.com/aeroapi/" target="_blank" rel="noopener noreferrer" className="underline">FlightAware AeroAPI</a>
+          </p>
+        </div>
+
         <button
           onClick={handleSave}
           className="pixel-button w-full py-3 text-sm"
@@ -140,6 +185,7 @@ export default function ApiKeySettings() {
           <p>• API 金鑰僅儲存在您的瀏覽器中，不會上傳到伺服器</p>
           <p>• 使用 AI 推薦功能前，必須先設定 Gemini API Key</p>
           <p>• 使用地圖和地點自動完成功能前，必須先設定 Google Maps API Key</p>
+          <p>• 使用航班查詢功能前，建議設定 FlightAware API Key 以獲取實時航班信息</p>
         </div>
       </div>
     </div>

@@ -48,12 +48,20 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
     setFlightInfo(null);
 
     try {
+      // 獲取用戶的 FlightAware API key（如果已設定）
+      const userApiKey = typeof window !== 'undefined' 
+        ? localStorage.getItem('user_flightaware_api_key') || ''
+        : '';
+
       const response = await fetch('/api/flight-info', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ flightNumber: flightNumber.trim().toUpperCase() }),
+        body: JSON.stringify({ 
+          flightNumber: flightNumber.trim().toUpperCase(),
+          userApiKey: userApiKey || undefined,
+        }),
       });
 
       if (!response.ok) {
