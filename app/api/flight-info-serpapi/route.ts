@@ -366,6 +366,11 @@ export async function POST(request: NextRequest) {
               departure: depActual ? depActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : serpApiFlightInfo.actualTime?.departure,
               arrival: arrActual ? arrActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : serpApiFlightInfo.actualTime?.arrival,
             },
+            // 合併行李信息：優先使用 SerpAPI 的行李限額信息，AirLabs 的行李轉盤信息
+            baggageInfo: {
+              ...serpApiFlightInfo.baggageInfo,
+              baggageClaim: airLabsFlightInfo.arr_baggage || serpApiFlightInfo.baggageInfo?.baggageClaim,
+            },
           });
         }
         
