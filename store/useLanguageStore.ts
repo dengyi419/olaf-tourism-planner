@@ -54,6 +54,9 @@ const translations: Record<Language, Record<string, string>> = {
     'flight.dateWarning': '您選擇的是未來日期（{date}），實時狀態信息僅顯示當天數據',
     'flight.dateWarningPast': '您選擇的是過去日期（{date}），實時狀態信息僅顯示當天數據',
     'flight.transportCost': '交通費用',
+    'flight.errorNoFlightNumber': '請輸入航班編號',
+    'flight.errorQueryFailed': '查詢航班信息失敗',
+    'flight.errorOccurred': '查詢航班信息時發生錯誤',
   },
   'en': {
     'mainMenu.title': 'OLAF TOURISM PLANNER',
@@ -100,6 +103,9 @@ const translations: Record<Language, Record<string, string>> = {
     'flight.dateWarning': 'You selected a future date ({date}), real-time status information shows only today\'s data',
     'flight.dateWarningPast': 'You selected a past date ({date}), real-time status information shows only today\'s data',
     'flight.transportCost': 'Transport Cost',
+    'flight.errorNoFlightNumber': 'Please enter flight number',
+    'flight.errorQueryFailed': 'Failed to query flight information',
+    'flight.errorOccurred': 'An error occurred while querying flight information',
   },
   'ja': {
     'mainMenu.title': 'OLAF TOURISM PLANNER',
@@ -146,6 +152,9 @@ const translations: Record<Language, Record<string, string>> = {
     'flight.dateWarning': '未来の日付（{date}）を選択しました。リアルタイムステータス情報は当日のデータのみ表示されます',
     'flight.dateWarningPast': '過去の日付（{date}）を選択しました。リアルタイムステータス情報は当日のデータのみ表示されます',
     'flight.transportCost': '交通費',
+    'flight.errorNoFlightNumber': 'フライト番号を入力してください',
+    'flight.errorQueryFailed': 'フライト情報の照会に失敗しました',
+    'flight.errorOccurred': 'フライト情報の照会中にエラーが発生しました',
   },
   'ko': {
     'mainMenu.title': 'OLAF TOURISM PLANNER',
@@ -192,6 +201,9 @@ const translations: Record<Language, Record<string, string>> = {
     'flight.dateWarning': '미래 날짜({date})를 선택했습니다. 실시간 상태 정보는 당일 데이터만 표시됩니다',
     'flight.dateWarningPast': '과거 날짜({date})를 선택했습니다. 실시간 상태 정보는 당일 데이터만 표시됩니다',
     'flight.transportCost': '교통비',
+    'flight.errorNoFlightNumber': '항공편 번호를 입력하세요',
+    'flight.errorQueryFailed': '항공편 정보 조회 실패',
+    'flight.errorOccurred': '항공편 정보 조회 중 오류가 발생했습니다',
   },
 };
 
