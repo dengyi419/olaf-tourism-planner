@@ -194,10 +194,26 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       const departure = flight.departure_airport || flight.departure || {};
       const arrival = flight.arrival_airport || flight.arrival || {};
       
-      // 提取時間資訊（根據 SerpAPI 文檔，時間可能在多個位置）
-      // 優先順序：departure_airport.time > flight.departure_time > flight.dep_time
-      const departureTime = departure.time || flight.departure_time || flight.dep_time || undefined;
-      const arrivalTime = arrival.time || flight.arrival_time || flight.arr_time || undefined;
+      // 提取時間資訊（根據 SerpAPI 文檔，時間格式為 "2025-10-14 11:30"）
+      // 時間可能在 departure_airport.time 或 arrival_airport.time
+      const parseSerpAPITime = (timeStr: string | undefined): string | undefined => {
+        if (!timeStr) return undefined;
+        // SerpAPI 時間格式： "2025-10-14 11:30" 或 "11:30"
+        if (timeStr.includes(' ')) {
+          const [, timePart] = timeStr.split(' ');
+          return timePart; // 返回時間部分 "11:30"
+        }
+        // 如果已經是時間格式，直接返回
+        if (timeStr.match(/^\d{2}:\d{2}$/)) {
+          return timeStr;
+        }
+        return timeStr;
+      };
+      
+      const departureTimeRaw = departure.time || flight.departure_time || flight.dep_time || undefined;
+      const arrivalTimeRaw = arrival.time || flight.arrival_time || flight.arr_time || undefined;
+      const departureTime = parseSerpAPITime(departureTimeRaw);
+      const arrivalTime = parseSerpAPITime(arrivalTimeRaw);
       
       console.log('找到航班並提取數據:', {
         flightNumber: flight.flight_number || flight.flight_iata,
