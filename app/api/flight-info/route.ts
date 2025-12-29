@@ -150,27 +150,41 @@ async function queryAirLabs(flightNumber: string, apiKey: string, flightDate?: s
     const flightData = data.response || data;
     const flights = Array.isArray(flightData) ? flightData : (flightData.flights || []);
     
+    console.log('解析後的航班數據:', {
+      hasResponse: !!data.response,
+      responseLength: Array.isArray(data.response) ? data.response.length : 'not array',
+      flightsLength: flights.length,
+      dataKeys: Object.keys(data),
+    });
+    
     if (flights.length > 0) {
       const flight = flights[0]; // 使用第一個結果
+      
+      console.log('找到航班:', {
+        flight_iata: flight.flight_iata,
+        flight_icao: flight.flight_icao,
+        dep_iata: flight.dep_iata,
+        arr_iata: flight.arr_iata,
+      });
       
       // 轉換為我們的格式
       return {
         flightNumber: flight.flight_iata || flight.flight_icao || flightNumber,
         departure: {
           airport: flight.dep_iata || flight.dep_icao || '',
-          city: flight.dep_name || '',
+          city: flight.dep_name || flight.dep_city || '',
           terminal: flight.dep_terminal || undefined,
           checkInCounter: undefined, // AirLabs 通常不提供此信息
           gate: flight.dep_gate || undefined,
         },
         arrival: {
           airport: flight.arr_iata || flight.arr_icao || '',
-          city: flight.arr_name || '',
+          city: flight.arr_name || flight.arr_city || '',
           terminal: flight.arr_terminal || undefined,
           gate: flight.arr_gate || undefined,
           baggageClaim: flight.arr_baggage || undefined,
         },
-        status: flight.status || '未知',
+        status: flight.status || flight.flight_status || '未知',
         scheduledTime: {
           departure: flight.dep_time ? new Date(flight.dep_time * 1000).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
           arrival: flight.arr_time ? new Date(flight.arr_time * 1000).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
@@ -182,7 +196,17 @@ async function queryAirLabs(flightNumber: string, apiKey: string, flightDate?: s
       };
     }
     
-    throw new Error('未找到航班信息');
+    // 如果沒有找到航班，記錄詳細信息以便調試
+    console.warn('未找到航班信息，API 響應結構:', {
+      hasData: !!data,
+      dataType: typeof data,
+      dataKeys: data ? Object.keys(data) : [],
+      responseType: data?.response ? typeof data.response : 'no response',
+      responseIsArray: Array.isArray(data?.response),
+      responseLength: Array.isArray(data?.response) ? data.response.length : 'not array',
+    });
+    
+    throw new Error('未找到航班信息。請確認航班編號是否正確，或該航班可能不在 AirLabs 數據庫中。');
   } catch (error: any) {
     console.error('AirLabs API 錯誤:', {
       message: error.message,
