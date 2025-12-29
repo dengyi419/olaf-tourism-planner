@@ -88,8 +88,6 @@ ${boardingPassInfo}
 
 直接輸出 SVG 代碼即可。
 `;
-<｜tool▁call▁begin｜>
-read_lints
 
     const modelNames = ['gemini-2.5-flash-image', 'gemini-2.5-flash', 'gemini-2.5-pro'];
     let svgCode: string | undefined;
