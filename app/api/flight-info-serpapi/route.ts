@@ -270,20 +270,20 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       
       // 提取延誤資訊（SerpAPI 可能不直接提供延誤資訊，需要從其他字段推斷）
       // 注意：SerpAPI Google Flights 主要提供價格和路線資訊，延誤資訊可能需要其他 API
-      const isDelayed = leg.delay || leg.delayed || leg.is_delayed || flight.delay || flight.delayed || flight.is_delayed || false;
-      const delayMinutes = leg.delay_minutes || leg.delay_min || flight.delay_minutes || flight.delay_min || 0;
+      const isDelayed = !!(leg.delay || leg.delayed || leg.is_delayed);
+      const delayMinutes = leg.delay_minutes || leg.delay_min || 0;
       
       // 提取航班資訊（從 leg 中提取，因為這是實際的航班資訊）
-      const airline = leg.airline || flight.airline || '';
-      const airlineCode = leg.airline_code || flight.airline_code || '';
-      const flightNum = leg.flight_number || flight.flight_number || flightNumber;
+      const airline = leg.airline || '';
+      const airlineCode = leg.airline_code || '';
+      const flightNum = leg.flight_number || flightNumber;
       
       // 提取行李資訊（根據 SerpAPI 文檔，使用 included_baggage 欄位）
       const baggageInfo: any = {};
       
       // 優先使用 included_baggage 欄位（SerpAPI 標準欄位）
-      if (leg.included_baggage || flight.included_baggage) {
-        const includedBaggage = leg.included_baggage || flight.included_baggage;
+      if (leg.included_baggage) {
+        const includedBaggage = leg.included_baggage;
         
         // included_baggage 可能是字符串或對象
         if (typeof includedBaggage === 'string') {
@@ -306,7 +306,7 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       
       // 如果沒有 included_baggage，嘗試其他字段作為後備
       if (!baggageInfo.baggageAllowance) {
-        const baggagePrices = leg.baggage_prices || leg.baggage || flight.baggage_prices || flight.baggage || [];
+        const baggagePrices = leg.baggage_prices || leg.baggage || [];
         if (Array.isArray(baggagePrices) && baggagePrices.length > 0) {
           baggageInfo.baggageAllowance = baggagePrices.map((p: any) => {
             if (typeof p === 'string') return p;
@@ -328,8 +328,8 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       }
       
       // 如果還是沒有，嘗試 baggage_allowance 字段
-      if (!baggageInfo.baggageAllowance && (leg.baggage_allowance || flight.baggage_allowance)) {
-        baggageInfo.baggageAllowance = leg.baggage_allowance || flight.baggage_allowance;
+      if (!baggageInfo.baggageAllowance && leg.baggage_allowance) {
+        baggageInfo.baggageAllowance = leg.baggage_allowance;
       }
       
       // 提取飛機型號資訊（根據 SerpAPI 文檔）
@@ -337,13 +337,13 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       // 其次使用 aircraft 欄位
       let aircraftInfo: any = undefined;
       
-      if (leg.airplane || flight.airplane) {
+      if (leg.airplane) {
         // airplane 欄位通常是字符串，如 "Boeing 737MAX 8 Passenger"
         aircraftInfo = {
-          name: leg.airplane || flight.airplane,
+          name: leg.airplane,
         };
-      } else if (leg.aircraft || flight.aircraft) {
-        const aircraft = leg.aircraft || flight.aircraft;
+      } else if (leg.aircraft) {
+        const aircraft = leg.aircraft;
         if (typeof aircraft === 'string') {
           // 如果是字符串，直接使用
           aircraftInfo = {
@@ -360,7 +360,7 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       
       // 如果沒有 aircraft 欄位，嘗試其他字段作為後備
       if (!aircraftInfo) {
-        const aircraft = leg.plane || flight.plane || {};
+        const aircraft = leg.plane || {};
         if (aircraft.code || aircraft.icao || aircraft.iata || aircraft.name) {
           aircraftInfo = {
             code: aircraft.code || aircraft.icao || aircraft.iata,
