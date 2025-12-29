@@ -61,6 +61,13 @@ export default function PlanPage() {
     }
   }, [tripName]);
 
+  // 同步 tripSettings.startDate 到 startDate state
+  useEffect(() => {
+    if (tripSettings?.startDate) {
+      setStartDate(tripSettings.startDate);
+    }
+  }, [tripSettings?.startDate]);
+
   const handleSaveSettings = () => {
     if (!tripName.trim()) {
       alert('請輸入行程名稱');
