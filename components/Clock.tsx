@@ -127,7 +127,13 @@ export default function Clock() {
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     
-    return { days: diffDays, hours: diffHours, tripName: tripName || '行程' };
+    return { 
+      days: diffDays, 
+      hours: diffHours, 
+      tripName: tripName || '行程',
+      startDate: startDate, // 返回完整的日期對象
+      startDateStr: nearestStartDate, // 返回日期字符串
+    };
   };
 
   const countdown = getCountdown();
@@ -178,9 +184,14 @@ export default function Clock() {
                 {countdown.tripName}
               </div>
             )}
-            <div className="text-[10px] text-blue-600 font-bold">
+            <div className="text-[10px] text-blue-600 font-bold mb-1">
               {countdown.days}天 {countdown.hours}小時
             </div>
+            {countdown.startDate && (
+              <div className="text-[7px] text-gray-600">
+                {formatDate(countdown.startDate)}
+              </div>
+            )}
           </div>
         )}
       </div>
