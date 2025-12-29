@@ -81,12 +81,13 @@ export default function PlanPage() {
       startDate,
     };
     setTripSettings(settings);
-    // 更新行程日期
+    // 更新行程日期和 dayId（重新編號，確保連續）
     const updatedItinerary = itinerary.map((day, index) => {
       const dayDate = new Date(startDate);
       dayDate.setDate(dayDate.getDate() + index);
       return {
         ...day,
+        dayId: index + 1, // 重新編號，確保連續
         date: dayDate.toISOString().split('T')[0],
       };
     });
