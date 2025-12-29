@@ -104,10 +104,11 @@ export default function BudgetHeader({ rightButtons }: BudgetHeaderProps) {
               </div>
             </div>
             
-            <div className="w-24 sm:w-32 md:w-40">
+            <div className="w-12 sm:w-32 md:w-40">
               <div className="flex justify-between text-xs mb-1">
-                <span className="whitespace-nowrap">預算使用率</span>
-                <span className="whitespace-nowrap">{budgetPercentage.toFixed(1)}%</span>
+                <span className="whitespace-nowrap hidden sm:inline">預算使用率</span>
+                <span className="whitespace-nowrap hidden sm:inline">{budgetPercentage.toFixed(1)}%</span>
+                <span className="whitespace-nowrap sm:hidden text-[8px]">{budgetPercentage.toFixed(0)}%</span>
               </div>
               <div className="w-full bg-gray-300 border-2 border-black h-4">
                 <div
