@@ -190,24 +190,33 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
                fn.toUpperCase().includes(flightNumber);
       }) || flights[0];
       
-      console.log('找到航班:', {
+      // 提取機場資訊（根據 SerpAPI 文檔格式）
+      const departure = flight.departure_airport || flight.departure || {};
+      const arrival = flight.arrival_airport || flight.arrival || {};
+      
+      // 提取時間資訊（根據 SerpAPI 文檔，時間可能在多個位置）
+      // 優先順序：departure_airport.time > flight.departure_time > flight.dep_time
+      const departureTime = departure.time || flight.departure_time || flight.dep_time || undefined;
+      const arrivalTime = arrival.time || flight.arrival_time || flight.arr_time || undefined;
+      
+      console.log('找到航班並提取數據:', {
         flightNumber: flight.flight_number || flight.flight_iata,
-        departure: flight.departure_airport?.id || flight.departure_airport?.name,
-        arrival: flight.arrival_airport?.id || flight.arrival_airport?.name,
+        departure: departure.id || departure.name,
+        arrival: arrival.id || arrival.name,
+        departureTime: departureTime,
+        arrivalTime: arrivalTime,
+        departureTimeSource: departure.time ? 'departure.time' : 
+          (flight.departure_time ? 'flight.departure_time' : 
+          (flight.dep_time ? 'flight.dep_time' : 'not found')),
+        arrivalTimeSource: arrival.time ? 'arrival.time' : 
+          (flight.arrival_time ? 'flight.arrival_time' : 
+          (flight.arr_time ? 'flight.arr_time' : 'not found')),
         aircraft: flight.aircraft,
         included_baggage: flight.included_baggage,
         baggage_prices: flight.baggage_prices,
         baggage: flight.baggage,
         flightKeys: Object.keys(flight),
       });
-      
-      // 提取機場資訊（根據 SerpAPI 文檔格式）
-      const departure = flight.departure_airport || flight.departure || {};
-      const arrival = flight.arrival_airport || flight.arrival || {};
-      
-      // 提取時間資訊（根據 SerpAPI 文檔，時間可能在 departure_airport.time 或 departure.time）
-      const departureTime = departure.time || flight.departure_time || flight.dep_time || undefined;
-      const arrivalTime = arrival.time || flight.arrival_time || flight.arr_time || undefined;
       
       // 提取延誤資訊（SerpAPI 可能不直接提供延誤資訊，需要從其他字段推斷）
       // 注意：SerpAPI Google Flights 主要提供價格和路線資訊，延誤資訊可能需要其他 API
