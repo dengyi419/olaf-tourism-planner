@@ -57,6 +57,11 @@ const translations: Record<Language, Record<string, string>> = {
     'flight.errorNoFlightNumber': '請輸入航班編號',
     'flight.errorQueryFailed': '查詢航班信息失敗',
     'flight.errorOccurred': '查詢航班信息時發生錯誤',
+    'flight.placeholder': '例如：CI100、BR101、JX123',
+    'flight.serpapiNote': 'SerpAPI 提供延誤狀態和地圖路線顯示',
+    'flight.delayed': '航班延誤 {minutes} 分鐘',
+    'flight.checkInNote': '提示：報到櫃檯信息請以機場公告為準',
+    'flight.infoDisclaimer': '提示：航班信息可能因實際情況而變動，請以機場公告為準。',
   },
   'en': {
     'mainMenu.title': 'OLAF TOURISM PLANNER',

@@ -147,7 +147,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
               value={flightNumber}
               onChange={(e) => setFlightNumber(e.target.value.toUpperCase())}
               onKeyPress={handleKeyPress}
-              placeholder={language === 'zh-TW' ? '例如：CI100、BR101、JX123' : language === 'en' ? 'e.g., CI100, BR101, JX123' : language === 'ja' ? '例：CI100、BR101、JX123' : '예: CI100, BR101, JX123'}
+              placeholder={t('flight.placeholder')}
               className="pixel-input w-full px-4 py-2"
             />
           </div>
@@ -185,7 +185,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
               </button>
             </div>
             <p className="text-[10px] opacity-70 mt-1">
-              {language === 'zh-TW' ? 'SerpAPI 提供延誤狀態和地圖路線顯示' : language === 'en' ? 'SerpAPI provides delay status and route map display' : language === 'ja' ? 'SerpAPIは遅延ステータスとルートマップ表示を提供' : 'SerpAPI는 지연 상태 및 경로 지도 표시 제공'}
+              {t('flight.serpapiNote')}
             </p>
           </div>
 
@@ -258,7 +258,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                   <div className="mb-3 p-2 bg-red-100 border-2 border-red-500 rounded flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-red-600" />
                     <span className="text-xs font-bold text-red-800">
-                      {language === 'zh-TW' ? `航班延誤 ${flightInfo.delayMinutes} 分鐘` : language === 'en' ? `Flight delayed ${flightInfo.delayMinutes} minutes` : language === 'ja' ? `フライト遅延 ${flightInfo.delayMinutes} 分` : `항공편 지연 ${flightInfo.delayMinutes}분`}
+                      {t('flight.delayed').replace('{minutes}', flightInfo.delayMinutes?.toString() || '0')}
                     </span>
                   </div>
                 )}
@@ -293,7 +293,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                     )}
                     {!flightInfo.departure.checkInCounter && (
                       <div className="text-[10px] opacity-50 italic">
-                        {language === 'zh-TW' ? '提示：報到櫃檯信息請以機場公告為準' : language === 'en' ? 'Note: Check-in counter information is subject to airport announcements' : language === 'ja' ? '注意：チェックインカウンター情報は空港の案内に従ってください' : '참고: 체크인 카운터 정보는 공항 공지사항을 따릅니다'}
+                        {t('flight.checkInNote')}
                       </div>
                     )}
                     {flightInfo.departure.gate && (
@@ -396,7 +396,7 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
 
           <div className="text-xs opacity-70">
             <p>
-              {language === 'zh-TW' ? '提示：航班信息可能因實際情況而變動，請以機場公告為準。' : language === 'en' ? 'Note: Flight information may change due to actual circumstances, please refer to airport announcements.' : language === 'ja' ? '注意：フライト情報は実際の状況により変更される場合があります。空港の案内に従ってください。' : '참고: 항공편 정보는 실제 상황에 따라 변경될 수 있습니다. 공항 공지사항을 참고하세요.'}
+              {t('flight.infoDisclaimer')}
             </p>
           </div>
         </div>
