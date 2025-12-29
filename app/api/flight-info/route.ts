@@ -117,6 +117,23 @@ async function queryAviationStack(flightNumber: string, apiKey: string, flightDa
 
     const data = await response.json();
     
+    // 檢查 API 返回的錯誤（即使 HTTP 狀態碼是 200）
+    if (data.error) {
+      console.error('AviationStack API 返回錯誤:', data.error);
+      // 檢查錯誤代碼
+      if (data.error.code === 401) {
+        throw new Error('AviationStack API Key 無效。請確認 API Key 是否正確。');
+      }
+      if (data.error.code === 403) {
+        if (data.error.info?.includes('quota') || data.error.info?.includes('limit')) {
+          throw new Error('AviationStack API 配額已用完或達到請求限制。請檢查您的訂閱計劃。');
+        }
+        throw new Error('AviationStack API 權限不足。請確認 API Key 是否有效且訂閱計劃允許此操作。');
+      }
+      // 其他錯誤
+      throw new Error(data.error.info || data.error.message || 'AviationStack API 錯誤');
+    }
+    
     // 處理 AviationStack 返回的數據
     if (data.data && data.data.length > 0) {
       const flight = data.data[0]; // 使用第一個結果
