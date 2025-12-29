@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Search, Plane, MapPin, DoorOpen, Luggage, AlertCircle } from 'lucide-react';
+import { X, Search, Plane, MapPin, DoorOpen, Luggage, AlertCircle, Ticket, Download, Loader2 } from 'lucide-react';
 import FlightRouteMap from './FlightRouteMap';
 import { useLanguageStore, t } from '@/store/useLanguageStore';
 
@@ -64,6 +64,9 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [flightInfo, setFlightInfo] = useState<FlightInfo | null>(null);
+  const [isGeneratingBoardingPass, setIsGeneratingBoardingPass] = useState(false);
+  const [boardingPassSvg, setBoardingPassSvg] = useState<string | null>(null);
+  const [boardingPassError, setBoardingPassError] = useState('');
 
   const handleSearch = async () => {
     if (!flightNumber.trim()) {
@@ -121,6 +124,86 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
     if (e.key === 'Enter') {
       handleSearch();
     }
+  };
+
+  const handleGenerateBoardingPass = async () => {
+    if (!flightInfo) return;
+
+    setIsGeneratingBoardingPass(true);
+    setBoardingPassError('');
+    setBoardingPassSvg(null);
+
+    try {
+      const userApiKey = typeof window !== 'undefined' 
+        ? localStorage.getItem('user_gemini_api_key') || ''
+        : '';
+
+      if (!userApiKey) {
+        throw new Error('請先在設定頁面設定 Gemini API Key');
+      }
+
+      const response = await fetch('/api/generate-boarding-pass', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          flightInfo,
+          userApiKey,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.details || '生成登機證失敗');
+      }
+
+      const data = await response.json();
+      setBoardingPassSvg(data.svgCode);
+    } catch (err: any) {
+      setBoardingPassError(err.message || '生成登機證時發生錯誤');
+    } finally {
+      setIsGeneratingBoardingPass(false);
+    }
+  };
+
+  const handleDownloadBoardingPass = () => {
+    if (!boardingPassSvg) return;
+
+    // 將 SVG 轉換為圖片並下載
+    const svgBlob = new Blob([boardingPassSvg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 800;
+      canvas.height = 400;
+      const ctx = canvas.getContext('2d');
+      
+      if (ctx) {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const downloadUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = `boarding-pass-${flightInfo?.flightNumber || 'flight'}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(downloadUrl);
+          }
+        }, 'image/png');
+      }
+      
+      URL.revokeObjectURL(url);
+    };
+    
+    img.src = url;
   };
 
   if (!isOpen) return null;
@@ -197,15 +280,35 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
               <div className="pixel-card p-4 border-2 border-black">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-bold">{flightInfo.flightNumber}</h3>
-                  {flightInfo.status && (
-                    <span className={`text-xs px-2 py-1 border border-black ${
-                      flightInfo.isDelayed 
-                        ? 'bg-red-100 text-red-800' 
-                        : 'bg-green-100 text-green-800'
-                    }`}>
-                      {flightInfo.status}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {flightInfo.status && (
+                      <span className={`text-xs px-2 py-1 border border-black ${
+                        flightInfo.isDelayed 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {flightInfo.status}
+                      </span>
+                    )}
+                    <button
+                      onClick={handleGenerateBoardingPass}
+                      disabled={isGeneratingBoardingPass}
+                      className="pixel-button px-3 py-1 text-xs flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="生成虛擬電子登機證"
+                    >
+                      {isGeneratingBoardingPass ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>生成中...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Ticket className="w-3 h-3" />
+                          <span>生成登機證</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
 
@@ -373,6 +476,40 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                     departureCity={flightInfo.departure.city}
                     arrivalCity={flightInfo.arrival.city}
                   />
+                </div>
+              )}
+
+              {/* 虛擬電子登機證 */}
+              {boardingPassError && (
+                <div className="pixel-card p-3 bg-red-100 border-red-500 text-red-700 text-xs">
+                  {boardingPassError}
+                </div>
+              )}
+
+              {boardingPassSvg && (
+                <div className="pixel-card p-4 border-2 border-black">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-xs font-bold">虛擬電子登機證</h4>
+                    <button
+                      onClick={handleDownloadBoardingPass}
+                      className="pixel-button px-3 py-1 text-xs flex items-center gap-1"
+                      title="下載登機證"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>下載</span>
+                    </button>
+                  </div>
+                  <div className="w-full overflow-x-auto bg-black rounded border-2 border-cyan-400 p-2">
+                    <div 
+                      className="mx-auto"
+                      style={{ 
+                        width: '800px', 
+                        height: '400px',
+                        maxWidth: '100%',
+                      }}
+                      dangerouslySetInnerHTML={{ __html: boardingPassSvg }}
+                    />
+                  </div>
                 </div>
               )}
             </div>
