@@ -169,8 +169,11 @@ export default function Clock() {
                 {countdown.tripName}
               </div>
             )}
-            <div className="text-[10px] text-blue-600 font-bold">
+            <div className="text-[10px] text-blue-600 font-bold mb-1">
               {countdown.days}天 {countdown.hours}小時
+            </div>
+            <div className="text-[6px] text-gray-500">
+              今天：{time && formatDate(time)}
             </div>
           </div>
         )}
