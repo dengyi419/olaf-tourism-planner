@@ -329,45 +329,7 @@ export default function PlanPage() {
 
   return (
     <div className="min-h-screen bg-[#f5f5dc]">
-      <BudgetHeader 
-        rightButtons={
-          <>
-            <button
-              onClick={() => router.push('/')}
-              className="pixel-button px-3 py-1.5 text-xs"
-            >
-              <Home className="w-3 h-3 inline mr-1" />
-              主選單
-            </button>
-            {hasSettings && hasItinerary && (
-              <>
-                <button
-                  onClick={handleSave}
-                  className="pixel-button px-3 py-1.5 text-xs"
-                >
-                  <Save className="w-3 h-3 inline mr-1" />
-                  儲存
-                </button>
-                <button
-                  onClick={handleExportPDF}
-                  className="pixel-button px-3 py-1.5 text-xs"
-                >
-                  <FileDown className="w-3 h-3 inline mr-1" />
-                  匯出 PDF
-                </button>
-                <button
-                  onClick={handleClearCurrentTrip}
-                  className="pixel-button px-3 py-1.5 text-xs"
-                  title="清除當前行程並返回選擇畫面"
-                >
-                  <History className="w-3 h-3 inline mr-1" />
-                  重新選擇
-                </button>
-              </>
-            )}
-          </>
-        }
-      />
+      <BudgetHeader />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ paddingTop: '120px' }}>
         {!hasSettings ? (
@@ -567,7 +529,7 @@ export default function PlanPage() {
                     />
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h1 
                       className="text-2xl cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
                       onClick={() => setIsEditingName(true)}
@@ -582,6 +544,39 @@ export default function PlanPage() {
                     >
                       編輯
                     </button>
+                    {hasSettings && hasItinerary && (
+                      <>
+                        <button
+                          onClick={() => router.push('/')}
+                          className="pixel-button px-3 py-1.5 text-xs"
+                        >
+                          <Home className="w-3 h-3 inline mr-1" />
+                          主選單
+                        </button>
+                        <button
+                          onClick={handleSave}
+                          className="pixel-button px-3 py-1.5 text-xs"
+                        >
+                          <Save className="w-3 h-3 inline mr-1" />
+                          儲存
+                        </button>
+                        <button
+                          onClick={handleExportPDF}
+                          className="pixel-button px-3 py-1.5 text-xs"
+                        >
+                          <FileDown className="w-3 h-3 inline mr-1" />
+                          匯出 PDF
+                        </button>
+                        <button
+                          onClick={handleClearCurrentTrip}
+                          className="pixel-button px-3 py-1.5 text-xs"
+                          title="清除當前行程並返回選擇畫面"
+                        >
+                          <History className="w-3 h-3 inline mr-1" />
+                          重新選擇
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
                 <p className="text-xs mt-1">
