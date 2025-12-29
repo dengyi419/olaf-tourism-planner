@@ -35,12 +35,31 @@ export default function PlanPage() {
   const hasSettings = !!tripSettings;
   const hasItinerary = itinerary.length > 0;
 
-  // 自動儲存
+  // 自動儲存（包含名稱）
   useEffect(() => {
     if (tripSettings && itinerary.length > 0) {
       updateCurrentTrip(tripSettings, itinerary);
+      // 同時更新 currentTrip 的名稱
+      const currentTrip = useStorageStore.getState().currentTrip;
+      const name = tripName.trim() || currentTrip?.name || `行程 ${new Date().toLocaleDateString('zh-TW')}`;
+      if (currentTrip && currentTrip.name !== name) {
+        useStorageStore.setState({
+          currentTrip: {
+            ...currentTrip,
+            name,
+          },
+        });
+      }
     }
-  }, [tripSettings, itinerary, updateCurrentTrip]);
+  }, [tripSettings, itinerary, tripName, updateCurrentTrip]);
+  
+  // 載入行程時同步名稱
+  useEffect(() => {
+    const currentTrip = useStorageStore.getState().currentTrip;
+    if (currentTrip?.name && !tripName) {
+      setTripName(currentTrip.name);
+    }
+  }, [tripName]);
 
   const handleSaveSettings = () => {
     if (!tripName.trim()) {
