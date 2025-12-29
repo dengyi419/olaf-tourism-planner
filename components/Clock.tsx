@@ -41,14 +41,20 @@ export default function Clock() {
 
   // 計算距離最近行程的倒數時間
   const getCountdown = () => {
+    const today = new Date().toISOString().split('T')[0];
+    
     // 優先使用當前行程的開始日期
     let nearestStartDate: string | null = null;
     
     if (tripSettings?.startDate && itinerary.length > 0) {
-      // 使用當前行程的開始日期
-      nearestStartDate = tripSettings.startDate;
-    } else {
-      // 如果沒有當前行程，從所有行程中找最近的開始日期
+      // 使用當前行程的開始日期（必須是今天之後）
+      if (tripSettings.startDate > today) {
+        nearestStartDate = tripSettings.startDate;
+      }
+    }
+    
+    // 如果沒有當前行程或當前行程不是未來，從所有行程中找最近的開始日期
+    if (!nearestStartDate) {
       const allTrips = currentTrip ? [currentTrip, ...savedTrips] : savedTrips;
       const futureTrips = allTrips
         .filter(trip => trip.settings?.startDate)
@@ -56,7 +62,7 @@ export default function Clock() {
           id: trip.id,
           startDate: trip.settings!.startDate!,
         }))
-        .filter(trip => trip.startDate >= new Date().toISOString().split('T')[0])
+        .filter(trip => trip.startDate > today) // 嚴格大於今天（不含今天）
         .sort((a, b) => a.startDate.localeCompare(b.startDate));
       
       if (futureTrips.length > 0) {
@@ -71,10 +77,10 @@ export default function Clock() {
     const now = new Date();
     const startDate = new Date(nearestStartDate);
     startDate.setHours(0, 0, 0, 0);
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
-    // 如果開始日期是今天或過去，不顯示倒數
-    if (startDate <= today) {
+    // 如果開始日期是今天或過去，不顯示倒數（雙重檢查）
+    if (startDate <= todayDate) {
       return null;
     }
     

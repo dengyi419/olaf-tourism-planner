@@ -131,12 +131,19 @@ export default function AIPlanPage() {
 
       const data = await response.json();
       
+      // 確保 startDate 有值且有效（必須使用用戶選擇的日期，不能回退到今天）
+      if (!startDate || !startDate.trim()) {
+        throw new Error('請選擇旅遊開始日期');
+      }
+      const validStartDate = startDate.trim();
+      console.log('AI 生成行程 - 使用的開始日期:', validStartDate, '用戶選擇的日期:', startDate);
+      
       // 設定行程設定
       const settings = {
         totalBudget: budget,
         destination,
         currency,
-        startDate,
+        startDate: validStartDate, // 使用驗證後的日期
       };
       setTripSettings(settings);
 
@@ -165,14 +172,25 @@ export default function AIPlanPage() {
         dayId: day.dayId || index + 1,
       }));
 
-      // 設定行程（為每一天添加日期，使用設定的開始日期或今天）
-      const baseDate = startDate || new Date().toISOString().split('T')[0];
+      // 設定行程（為每一天添加日期，使用設定的開始日期）
+      // 使用 settings 中的 startDate（已經驗證過）
+      const baseDate = validStartDate;
       const baseDateObj = new Date(baseDate);
-      const itineraryWithDates = data.itinerary.map((day: any, index: number) => ({
-        ...day,
-        dayId: day.dayId || index + 1, // 確保 dayId 正確
-        date: new Date(baseDateObj.getTime() + index * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      }));
+      // 確保日期有效
+      if (isNaN(baseDateObj.getTime())) {
+        console.error('無效的開始日期:', baseDate);
+        throw new Error('無效的開始日期，請重新選擇');
+      }
+      console.log('AI 生成行程 - 基礎日期:', baseDate, '行程天數:', data.itinerary.length);
+      const itineraryWithDates = data.itinerary.map((day: any, index: number) => {
+        const dayDate = new Date(baseDateObj.getTime() + index * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        console.log(`第 ${index + 1} 天日期:`, dayDate);
+        return {
+          ...day,
+          dayId: day.dayId || index + 1, // 確保 dayId 正確
+          date: dayDate,
+        };
+      });
 
       setItinerary(itineraryWithDates);
       
