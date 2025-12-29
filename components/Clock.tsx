@@ -71,47 +71,30 @@ export default function Clock() {
     return time || new Date();
   };
 
-  // 計算距離最近行程的倒數時間
+  // 計算距離最近行程的倒數時間（永遠顯示離目前時間最近的未來行程）
   const getCountdown = () => {
     const today = new Date().toISOString().split('T')[0];
     
-    // 優先使用當前行程的開始日期
-    let nearestStartDate: string | null = null;
-    let tripName: string | null = null;
+    // 從所有行程中找最近的未來開始日期（包括當前行程）
+    const allTrips = currentTrip ? [currentTrip, ...savedTrips] : savedTrips;
+    const futureTrips = allTrips
+      .filter(trip => trip.settings?.startDate)
+      .map(trip => ({
+        id: trip.id,
+        name: trip.name,
+        startDate: trip.settings!.startDate!,
+      }))
+      .filter(trip => trip.startDate > today) // 嚴格大於今天（不含今天）
+      .sort((a, b) => a.startDate.localeCompare(b.startDate)); // 按日期排序，最近的在前
     
-    if (tripSettings?.startDate && itinerary.length > 0) {
-      // 使用當前行程的開始日期（必須是今天之後）
-      if (tripSettings.startDate > today) {
-        nearestStartDate = tripSettings.startDate;
-        // 獲取當前行程名稱
-        if (currentTrip?.name) {
-          tripName = currentTrip.name;
-        }
-      }
-    }
-    
-    // 如果沒有當前行程或當前行程不是未來，從所有行程中找最近的開始日期
-    if (!nearestStartDate) {
-      const allTrips = currentTrip ? [currentTrip, ...savedTrips] : savedTrips;
-      const futureTrips = allTrips
-        .filter(trip => trip.settings?.startDate)
-        .map(trip => ({
-          id: trip.id,
-          name: trip.name,
-          startDate: trip.settings!.startDate!,
-        }))
-        .filter(trip => trip.startDate > today) // 嚴格大於今天（不含今天）
-        .sort((a, b) => a.startDate.localeCompare(b.startDate));
-      
-      if (futureTrips.length > 0) {
-        nearestStartDate = futureTrips[0].startDate;
-        tripName = futureTrips[0].name;
-      }
-    }
-    
-    if (!nearestStartDate) {
+    if (futureTrips.length === 0) {
       return null;
     }
+    
+    // 選擇最近的未來行程
+    const nearestTrip = futureTrips[0];
+    const nearestStartDate = nearestTrip.startDate;
+    const tripName = nearestTrip.name;
     
     const now = new Date();
     const startDate = new Date(nearestStartDate);
@@ -179,7 +162,7 @@ export default function Clock() {
               <Calendar className="w-3 h-3 text-blue-600" />
               <span className="text-[8px] text-blue-600 font-bold">距離行程開始</span>
             </div>
-            {countdown.tripName && (
+            {countdown.tripName && countdown.tripName !== '行程' && countdown.tripName.length > 0 && !/^\d{4}$/.test(countdown.tripName) && (
               <div className="text-[7px] text-gray-600 mb-1">
                 {countdown.tripName}
               </div>
