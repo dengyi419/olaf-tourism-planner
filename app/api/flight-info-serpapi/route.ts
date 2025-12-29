@@ -506,6 +506,10 @@ export async function POST(request: NextRequest) {
               if (airLabsFlightInfo.arr_baggage) {
                 merged.baggageClaim = airLabsFlightInfo.arr_baggage;
               }
+              // 如果只有行李轉盤信息，也返回
+              if (!merged.baggageAllowance && !merged.carryOn && !merged.checkedBaggage && merged.baggageClaim) {
+                return merged;
+              }
               return Object.keys(merged).length > 0 ? merged : undefined;
             })(),
             // 合併飛機型號：優先使用 AirLabs 的飛機信息
