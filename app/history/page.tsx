@@ -110,30 +110,31 @@ export default function HistoryPage() {
 
   return (
     <div className="min-h-screen bg-[#f5f5dc]">
-      <BudgetHeader />
-      
-      {/* 右上角時鐘和按鈕 - 固定在狀態列下方 */}
-      <div className="fixed top-[100px] right-2 sm:right-4 flex gap-2 sm:gap-3 z-40 flex-wrap justify-end max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2rem)]">
-        <Clock />
-        {selectedTrip && tripSettings && (
-          <button
-            onClick={handleManualSave}
-            disabled={isSaving}
-            className="pixel-button px-4 py-2 text-sm disabled:opacity-50"
-            title="手動儲存"
-          >
-            <Save className="w-4 h-4 inline mr-2" />
-            {isSaving ? '儲存中...' : '儲存'}
-          </button>
-        )}
-        <button
-          onClick={() => router.push('/')}
-          className="pixel-button px-4 py-2 text-sm"
-        >
-          <Home className="w-4 h-4 inline mr-2" />
-          主選單
-        </button>
-      </div>
+      <BudgetHeader 
+        rightButtons={
+          <>
+            <Clock />
+            {selectedTrip && tripSettings && (
+              <button
+                onClick={handleManualSave}
+                disabled={isSaving}
+                className="pixel-button px-3 py-1.5 text-xs disabled:opacity-50"
+                title="手動儲存"
+              >
+                <Save className="w-3 h-3 inline mr-1" />
+                {isSaving ? '儲存中...' : '儲存'}
+              </button>
+            )}
+            <button
+              onClick={() => router.push('/')}
+              className="pixel-button px-3 py-1.5 text-xs"
+            >
+              <Home className="w-3 h-3 inline mr-1" />
+              主選單
+            </button>
+          </>
+        }
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ paddingTop: '120px' }}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

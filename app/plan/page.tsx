@@ -330,45 +330,46 @@ export default function PlanPage() {
 
   return (
     <div className="min-h-screen bg-[#f5f5dc]">
-      <BudgetHeader />
-      
-      {/* 右上角時鐘和按鈕 - 固定在狀態列下方 */}
-      <div className="fixed top-[100px] right-2 sm:right-4 flex gap-2 sm:gap-3 z-40 flex-wrap justify-end max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2rem)]">
-        <Clock />
-        <button
-          onClick={() => router.push('/')}
-          className="pixel-button px-4 py-2 text-sm"
-        >
-          <Home className="w-4 h-4 inline mr-2" />
-          主選單
-        </button>
-        {hasSettings && hasItinerary && (
+      <BudgetHeader 
+        rightButtons={
           <>
+            <Clock />
             <button
-              onClick={handleSave}
-              className="pixel-button px-4 py-2 text-sm"
+              onClick={() => router.push('/')}
+              className="pixel-button px-3 py-1.5 text-xs"
             >
-              <Save className="w-4 h-4 inline mr-2" />
-              儲存
+              <Home className="w-3 h-3 inline mr-1" />
+              主選單
             </button>
-            <button
-              onClick={handleExportPDF}
-              className="pixel-button px-4 py-2 text-sm"
-            >
-              <FileDown className="w-4 h-4 inline mr-2" />
-              匯出 PDF
-            </button>
-            <button
-              onClick={handleClearCurrentTrip}
-              className="pixel-button px-4 py-2 text-sm"
-              title="清除當前行程並返回選擇畫面"
-            >
-              <History className="w-4 h-4 inline mr-2" />
-              重新選擇
-            </button>
+            {hasSettings && hasItinerary && (
+              <>
+                <button
+                  onClick={handleSave}
+                  className="pixel-button px-3 py-1.5 text-xs"
+                >
+                  <Save className="w-3 h-3 inline mr-1" />
+                  儲存
+                </button>
+                <button
+                  onClick={handleExportPDF}
+                  className="pixel-button px-3 py-1.5 text-xs"
+                >
+                  <FileDown className="w-3 h-3 inline mr-1" />
+                  匯出 PDF
+                </button>
+                <button
+                  onClick={handleClearCurrentTrip}
+                  className="pixel-button px-3 py-1.5 text-xs"
+                  title="清除當前行程並返回選擇畫面"
+                >
+                  <History className="w-3 h-3 inline mr-1" />
+                  重新選擇
+                </button>
+              </>
+            )}
           </>
-        )}
-      </div>
+        }
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ paddingTop: '120px' }}>
         {!hasSettings ? (

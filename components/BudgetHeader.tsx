@@ -2,8 +2,13 @@
 
 import { useTravelStore } from '@/store/useTravelStore';
 import { Wallet } from 'lucide-react';
+import { ReactNode } from 'react';
 
-export default function BudgetHeader() {
+interface BudgetHeaderProps {
+  rightButtons?: ReactNode;
+}
+
+export default function BudgetHeader({ rightButtons }: BudgetHeaderProps) {
   const { tripSettings, getTotalSpent, getRemainingBudget, getTodaySpent, itinerary } = useTravelStore();
   
   if (!tripSettings) {
@@ -85,6 +90,13 @@ export default function BudgetHeader() {
                 />
               </div>
             </div>
+            
+            {/* 右側按鈕區域 */}
+            {rightButtons && (
+              <div className="flex items-center gap-2 flex-wrap">
+                {rightButtons}
+              </div>
+            )}
           </div>
         </div>
       </div>

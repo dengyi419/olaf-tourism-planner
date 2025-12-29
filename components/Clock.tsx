@@ -135,24 +135,31 @@ export default function Clock() {
   const displayDateStr = displayDate.toISOString().split('T')[0];
 
   return (
-    <div className="pixel-card p-3 bg-white">
-      <div className="text-xs text-center" style={{ fontFamily: "'Press Start 2P', monospace", lineHeight: '1.6' }}>
-        <div className="mb-1" suppressHydrationWarning>
-          {time && formatTime(time)}
-        </div>
-        {/* 今天日期 - 較大字體 */}
-        <div className="text-[10px] mb-1" suppressHydrationWarning>
-          {formatDate(today)}
-        </div>
-        {/* 行程日期 - 較小字體 */}
-        {tripSettings?.startDate && displayDateStr !== todayDateStr && (
-          <div className="text-[8px] text-gray-600 mb-1" suppressHydrationWarning>
-            {formatDate(displayDate)}
-            <span className="ml-1 text-[6px] text-gray-500">(行程開始日)</span>
+    <>
+      {/* 時間卡片 */}
+      <div className="pixel-card p-3 bg-white">
+        <div className="text-xs text-center" style={{ fontFamily: "'Press Start 2P', monospace", lineHeight: '1.6' }}>
+          <div className="mb-1" suppressHydrationWarning>
+            {time && formatTime(time)}
           </div>
-        )}
-        {countdown && (
-          <div className="mt-2 pt-2 border-t-2 border-black">
+          {/* 今天日期 - 較大字體 */}
+          <div className="text-[10px] mb-1" suppressHydrationWarning>
+            {formatDate(today)}
+          </div>
+          {/* 行程日期 - 較小字體 */}
+          {tripSettings?.startDate && displayDateStr !== todayDateStr && (
+            <div className="text-[8px] text-gray-600 mb-1" suppressHydrationWarning>
+              {formatDate(displayDate)}
+              <span className="ml-1 text-[6px] text-gray-500">(行程開始日)</span>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* 倒數日卡片 */}
+      {countdown && (
+        <div className="pixel-card p-3 bg-white">
+          <div className="text-xs text-center" style={{ fontFamily: "'Press Start 2P', monospace", lineHeight: '1.6' }}>
             <div className="flex items-center justify-center gap-1 mb-1">
               <Calendar className="w-3 h-3 text-blue-600" />
               <span className="text-[8px] text-blue-600 font-bold">距離行程開始</span>
@@ -171,9 +178,9 @@ export default function Clock() {
               </div>
             )}
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 }
 
