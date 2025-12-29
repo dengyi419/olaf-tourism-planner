@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useTravelStore } from '@/store/useTravelStore';
-import { Wallet } from 'lucide-react';
 import { ReactNode } from 'react';
 
 interface BudgetHeaderProps {
@@ -81,8 +80,6 @@ export default function BudgetHeader({ rightButtons }: BudgetHeaderProps) {
                 (e.target as HTMLImageElement).style.display = 'none';
               }}
             />
-            <Wallet className="w-6 h-6" />
-            <h1 className="text-xl">Olaf tourism planner</h1>
           </div>
           
           <div className="flex items-center gap-6 flex-wrap">
