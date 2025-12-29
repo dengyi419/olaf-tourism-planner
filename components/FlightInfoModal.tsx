@@ -43,6 +43,10 @@ interface FlightInfo {
     carryOn?: string;
     checkedBaggage?: string;
   };
+  aircraft?: {
+    code?: string;
+    name?: string;
+  };
 }
 
 export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProps) {

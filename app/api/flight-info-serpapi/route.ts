@@ -178,12 +178,40 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       const flightNum = flight.flight_number || flightNumber;
       
       // 提取行李信息（如果 SerpAPI 提供）
-      const baggagePrices = flight.baggage_prices || [];
-      const baggageInfo = baggagePrices.length > 0 ? {
-        baggageAllowance: baggagePrices.join(', '),
-        carryOn: baggagePrices.find((p: string) => p.toLowerCase().includes('carry-on') || p.toLowerCase().includes('carryon')) || undefined,
-        checkedBaggage: baggagePrices.find((p: string) => !p.toLowerCase().includes('carry-on') && !p.toLowerCase().includes('carryon')) || undefined,
-        baggageClaim: undefined, // SerpAPI 不提供行李轉盤信息，由 AirLabs 提供
+      // SerpAPI 可能在不同字段中提供行李信息
+      const baggagePrices = flight.baggage_prices || flight.baggage || [];
+      const baggageInfo: any = {};
+      
+      // 處理行李價格數組
+      if (Array.isArray(baggagePrices) && baggagePrices.length > 0) {
+        baggageInfo.baggageAllowance = baggagePrices.map((p: any) => {
+          if (typeof p === 'string') return p;
+          return p.text || p.label || JSON.stringify(p);
+        }).join(', ');
+        
+        const carryOnItem = baggagePrices.find((p: any) => {
+          const text = (typeof p === 'string' ? p : p.text || p.label || '').toLowerCase();
+          return text.includes('carry-on') || text.includes('carryon') || text.includes('hand');
+        });
+        baggageInfo.carryOn = carryOnItem ? (typeof carryOnItem === 'string' ? carryOnItem : carryOnItem.text || carryOnItem.label) : undefined;
+        
+        const checkedItem = baggagePrices.find((p: any) => {
+          const text = (typeof p === 'string' ? p : p.text || p.label || '').toLowerCase();
+          return !text.includes('carry-on') && !text.includes('carryon') && !text.includes('hand');
+        });
+        baggageInfo.checkedBaggage = checkedItem ? (typeof checkedItem === 'string' ? checkedItem : checkedItem.text || checkedItem.label) : undefined;
+      }
+      
+      // 如果沒有行李信息，嘗試從其他字段獲取
+      if (!baggageInfo.baggageAllowance && flight.baggage_allowance) {
+        baggageInfo.baggageAllowance = flight.baggage_allowance;
+      }
+      
+      // 提取飛機型號信息
+      const aircraft = flight.aircraft || flight.plane || {};
+      const aircraftInfo = aircraft.code || aircraft.icao || aircraft.iata || aircraft.name ? {
+        code: aircraft.code || aircraft.icao || aircraft.iata,
+        name: aircraft.name || aircraft.model || undefined,
       } : undefined;
       
       return {
@@ -206,15 +234,17 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
         isDelayed: isDelayed,
         delayMinutes: delayMinutes,
         scheduledTime: {
-          departure: undefined, // SerpAPI 主要提供價格信息，不提供詳細時間
-          arrival: undefined,
+          departure: flight.departure_time || flight.dep_time || undefined,
+          arrival: flight.arrival_time || flight.arr_time || undefined,
         },
         actualTime: {
-          departure: undefined,
-          arrival: undefined,
+          departure: flight.departure_time_actual || flight.dep_actual || undefined,
+          arrival: flight.arrival_time_actual || flight.arr_actual || undefined,
         },
-        // 行李信息
-        baggageInfo: baggageInfo,
+        // 行李信息（如果有的話）
+        baggageInfo: Object.keys(baggageInfo).length > 0 ? baggageInfo : undefined,
+        // 飛機型號
+        aircraft: aircraftInfo,
         // 額外信息
         airline: airline,
         duration: flight.duration, // 飛行時長（分鐘）
@@ -384,12 +414,21 @@ export async function POST(request: NextRequest) {
               arrival: arrActual ? arrActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : serpApiFlightInfo.actualTime?.arrival,
             },
             // 合併行李信息：優先使用 SerpAPI 的行李限額信息，AirLabs 的行李轉盤信息
-            baggageInfo: serpApiFlightInfo.baggageInfo ? {
-              ...serpApiFlightInfo.baggageInfo,
-              baggageClaim: airLabsFlightInfo.arr_baggage || serpApiFlightInfo.baggageInfo.baggageClaim,
-            } : {
-              baggageClaim: airLabsFlightInfo.arr_baggage || undefined,
-            },
+            baggageInfo: (() => {
+              const merged: any = {};
+              if (serpApiFlightInfo.baggageInfo) {
+                Object.assign(merged, serpApiFlightInfo.baggageInfo);
+              }
+              if (airLabsFlightInfo.arr_baggage) {
+                merged.baggageClaim = airLabsFlightInfo.arr_baggage;
+              }
+              return Object.keys(merged).length > 0 ? merged : undefined;
+            })(),
+            // 合併飛機型號：優先使用 AirLabs 的飛機信息
+            aircraft: airLabsFlightInfo.aircraft_icao || airLabsFlightInfo.aircraft_iata ? {
+              code: airLabsFlightInfo.aircraft_icao || airLabsFlightInfo.aircraft_iata,
+              name: airLabsFlightInfo.aircraft_name || undefined,
+            } : serpApiFlightInfo.aircraft,
           });
         }
         

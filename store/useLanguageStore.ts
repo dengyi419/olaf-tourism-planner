@@ -45,6 +45,7 @@ const translations: Record<Language, Record<string, string>> = {
     'flight.baggageAllowance': '行李限額',
     'flight.carryOn': '隨身行李',
     'flight.checkedBaggage': '託運行李',
+    'flight.aircraft': '飛行機型',
     'flight.routeMap': '機場路線圖',
     'flight.apiSelect': '查詢方式',
     'flight.apiAirLabs': 'AirLabs',

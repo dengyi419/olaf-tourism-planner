@@ -215,6 +215,13 @@ async function queryAirLabs(flightNumber: string, apiKey: string, flightDate?: s
           departure: depActual ? depActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
           arrival: arrActual ? arrActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
         },
+        baggageInfo: flight.arr_baggage ? {
+          baggageClaim: flight.arr_baggage,
+        } : undefined,
+        aircraft: flight.aircraft_icao || flight.aircraft_iata ? {
+          code: flight.aircraft_icao || flight.aircraft_iata,
+          name: flight.aircraft_name || undefined,
+        } : undefined,
       };
     }
     
