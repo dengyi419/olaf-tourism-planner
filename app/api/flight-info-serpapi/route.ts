@@ -1,22 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // 先從 AirLabs 獲取機場信息，然後用 SerpAPI 查詢詳細信息
-async function getAirportInfoFromAirLabs(flightNumber: string, airLabsApiKey?: string): Promise<{departure?: string, arrival?: string} | null> {
+async function getAirportInfoFromAirLabs(flightNumber: string, airLabsApiKey: string): Promise<{departure?: string, arrival?: string} | null> {
   if (!airLabsApiKey) return null;
   
   try {
-    const response = await fetch('/api/flight-info', {
-      method: 'POST',
+    // 直接調用 AirLabs API，而不是通過我們的 API 路由
+    const cleanedApiKey = airLabsApiKey.trim().replace(/\s+/g, '');
+    const baseUrl = 'https://airlabs.co/api/v9/flight';
+    const params = new URLSearchParams({
+      api_key: cleanedApiKey,
+      flight_iata: flightNumber,
+    });
+    
+    const response = await fetch(`${baseUrl}?${params.toString()}`, {
+      method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ flightNumber, userApiKey: airLabsApiKey }),
     });
     
     if (response.ok) {
       const data = await response.json();
-      return {
-        departure: data.departure?.airport,
-        arrival: data.arrival?.airport,
-      };
+      if (data.response && data.response.flight_iata) {
+        const flight = data.response;
+        return {
+          departure: flight.dep_iata || flight.dep_icao,
+          arrival: flight.arr_iata || flight.arr_icao,
+        };
+      }
     }
   } catch (error) {
     console.warn('無法從 AirLabs 獲取機場信息:', error);
@@ -137,59 +147,66 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     });
     
     if (flights.length > 0) {
-      const flight = flights[0]; // 使用第一個結果
-      // SerpAPI 可能返回嵌套的 flights 數組
-      const flightInfo = Array.isArray(flight.flights) && flight.flights.length > 0 
-        ? flight.flights[0] 
-        : flight;
+      // 從 flights 數組中找到匹配的航班（根據航班編號）
+      // 如果找不到，使用第一個結果
+      let flight = flights.find((f: any) => {
+        const fn = f.flight_number || f.flight_iata || '';
+        return fn.toUpperCase().includes(flightNumber.substring(0, 2)) || 
+               fn.toUpperCase().includes(flightNumber);
+      }) || flights[0];
       
       console.log('找到航班:', {
-        flightNumber: flightInfo.flight_number || flightInfo.flight_iata,
-        departure: flightInfo.departure_airport || flightInfo.origin,
-        arrival: flightInfo.arrival_airport || flightInfo.destination,
+        flightNumber: flight.flight_number || flight.flight_iata,
+        departure: flight.departure_airport?.id || flight.departure_airport?.name,
+        arrival: flight.arrival_airport?.id || flight.arrival_airport?.name,
       });
       
-      // 提取延誤信息
-      const isDelayed = flightInfo.delay || flightInfo.delayed || flightInfo.is_delayed || false;
-      const delayMinutes = flightInfo.delay_minutes || flightInfo.delay_min || 0;
+      // 提取機場信息（根據 SerpAPI 文檔格式）
+      const departure = flight.departure_airport || {};
+      const arrival = flight.arrival_airport || {};
       
-      // 提取機場信息（嘗試多種可能的字段名）
-      const departure = flightInfo.departure_airport || flightInfo.origin || flightInfo.dep || {};
-      const arrival = flightInfo.arrival_airport || flightInfo.destination || flightInfo.arr || {};
+      // 提取延誤信息（SerpAPI 可能不直接提供延誤信息，需要從其他字段推斷）
+      // 注意：SerpAPI Google Flights 主要提供價格和路線信息，延誤信息可能需要其他 API
+      const isDelayed = flight.delay || flight.delayed || flight.is_delayed || false;
+      const delayMinutes = flight.delay_minutes || flight.delay_min || 0;
       
-      // 提取時間信息
-      const depTime = flightInfo.departure_time || flightInfo.dep_time || flightInfo.scheduled_departure;
-      const arrTime = flightInfo.arrival_time || flightInfo.arr_time || flightInfo.scheduled_arrival;
-      const depActual = flightInfo.actual_departure_time || flightInfo.actual_dep_time || flightInfo.dep_actual;
-      const arrActual = flightInfo.actual_arrival_time || flightInfo.actual_arr_time || flightInfo.arr_actual;
+      // 提取航班信息
+      const airline = flight.airline || '';
+      const airlineCode = flight.airline_code || '';
+      const flightNum = flight.flight_number || flightNumber;
       
       return {
-        flightNumber: flightInfo.flight_number || flightInfo.flight_iata || flightNumber,
+        flightNumber: `${airlineCode}${flightNum}` || flightNumber,
         departure: {
-          airport: departure.id || departure.iata || departure.code || departure.name || '',
-          city: departure.city || departure.location || departure.name || '',
-          terminal: departure.terminal || flightInfo.dep_terminal || undefined,
-          gate: departure.gate || flightInfo.dep_gate || undefined,
+          airport: departure.id || departure.name || '',
+          city: departure.name || departure.city || '',
+          terminal: undefined, // SerpAPI 通常不提供
+          gate: undefined, // SerpAPI 通常不提供
           checkInCounter: undefined,
         },
         arrival: {
-          airport: arrival.id || arrival.iata || arrival.code || arrival.name || '',
-          city: arrival.city || arrival.location || arrival.name || '',
-          terminal: arrival.terminal || flightInfo.arr_terminal || undefined,
-          gate: arrival.gate || flightInfo.arr_gate || undefined,
-          baggageClaim: flightInfo.baggage_claim || undefined,
+          airport: arrival.id || arrival.name || '',
+          city: arrival.name || arrival.city || '',
+          terminal: undefined, // SerpAPI 通常不提供
+          gate: undefined, // SerpAPI 通常不提供
+          baggageClaim: undefined,
         },
-        status: isDelayed ? `延誤 ${delayMinutes} 分鐘` : (flightInfo.status || '準時'),
+        status: isDelayed ? `延誤 ${delayMinutes} 分鐘` : (flight.status || '準時'),
         isDelayed: isDelayed,
         delayMinutes: delayMinutes,
         scheduledTime: {
-          departure: depTime || undefined,
-          arrival: arrTime || undefined,
+          departure: undefined, // SerpAPI 主要提供價格信息，不提供詳細時間
+          arrival: undefined,
         },
         actualTime: {
-          departure: depActual || undefined,
-          arrival: arrActual || undefined,
+          departure: undefined,
+          arrival: undefined,
         },
+        // 額外信息
+        airline: airline,
+        duration: flight.duration, // 飛行時長（分鐘）
+        price: flight.price, // 價格
+        numberOfStops: flight.number_of_stops || 0, // 經停次數
         // 機場座標（用於地圖顯示，如果 API 提供）
         departureCoordinates: departure.coordinates || departure.lat_lng || undefined,
         arrivalCoordinates: arrival.coordinates || arrival.lat_lng || undefined,
