@@ -202,8 +202,12 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
       });
       
       // 提取機場資訊（根據 SerpAPI 文檔格式）
-      const departure = flight.departure_airport || {};
-      const arrival = flight.arrival_airport || {};
+      const departure = flight.departure_airport || flight.departure || {};
+      const arrival = flight.arrival_airport || flight.arrival || {};
+      
+      // 提取時間資訊（根據 SerpAPI 文檔，時間可能在 departure_airport.time 或 departure.time）
+      const departureTime = departure.time || flight.departure_time || flight.dep_time || undefined;
+      const arrivalTime = arrival.time || flight.arrival_time || flight.arr_time || undefined;
       
       // 提取延誤資訊（SerpAPI 可能不直接提供延誤資訊，需要從其他字段推斷）
       // 注意：SerpAPI Google Flights 主要提供價格和路線資訊，延誤資訊可能需要其他 API
@@ -319,8 +323,9 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
         isDelayed: isDelayed,
         delayMinutes: delayMinutes,
         scheduledTime: {
-          departure: flight.departure_time || flight.dep_time || undefined,
-          arrival: flight.arrival_time || flight.arr_time || undefined,
+          // 優先使用從機場對象中提取的時間
+          departure: departureTime,
+          arrival: arrivalTime,
         },
         actualTime: {
           departure: flight.departure_time_actual || flight.dep_actual || undefined,
