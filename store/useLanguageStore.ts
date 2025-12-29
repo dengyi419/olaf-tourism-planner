@@ -165,6 +165,11 @@ const translations: Record<Language, Record<string, string>> = {
     'flight.errorNoFlightNumber': 'フライト番号を入力してください',
     'flight.errorQueryFailed': 'フライト情報の照会に失敗しました',
     'flight.errorOccurred': 'フライト情報の照会中にエラーが発生しました',
+    'flight.placeholder': '例：CI100、BR101、JX123',
+    'flight.serpapiNote': 'SerpAPIは遅延ステータスとルートマップ表示を提供',
+    'flight.delayed': 'フライト遅延 {minutes} 分',
+    'flight.checkInNote': '注意：チェックインカウンター情報は空港の案内に従ってください',
+    'flight.infoDisclaimer': '注意：フライト情報は実際の状況により変更される場合があります。空港の案内に従ってください。',
   },
   'ko': {
     'mainMenu.title': 'OLAF TOURISM PLANNER',
@@ -214,6 +219,11 @@ const translations: Record<Language, Record<string, string>> = {
     'flight.errorNoFlightNumber': '항공편 번호를 입력하세요',
     'flight.errorQueryFailed': '항공편 정보 조회 실패',
     'flight.errorOccurred': '항공편 정보 조회 중 오류가 발생했습니다',
+    'flight.placeholder': '예: CI100, BR101, JX123',
+    'flight.serpapiNote': 'SerpAPI는 지연 상태 및 경로 지도 표시 제공',
+    'flight.delayed': '항공편 지연 {minutes}분',
+    'flight.checkInNote': '참고: 체크인 카운터 정보는 공항 공지사항을 따릅니다',
+    'flight.infoDisclaimer': '참고: 항공편 정보는 실제 상황에 따라 변경될 수 있습니다. 공항 공지사항을 참고하세요.',
   },
 };
 
