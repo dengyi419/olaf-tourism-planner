@@ -17,8 +17,8 @@ const SUPPORTED_TYPES = {
 async function parsePDFWithGemini(pdfBase64: string, apiKey: string): Promise<string> {
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    // 使用支援 PDF 的模型（gemini-1.5-pro 或 gemini-1.5-flash）
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // 使用支援 PDF 的模型
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     
     // 移除 data URL 前綴（如果有的話）
     const base64Data = pdfBase64.includes(',') 
@@ -61,7 +61,7 @@ async function parsePDFWithGemini(pdfBase64: string, apiKey: string): Promise<st
 async function parseImageWithGemini(imageBase64: string, apiKey: string, mimeType: string = 'image/png'): Promise<string> {
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     
     // 移除 data URL 前綴（如果有的話）
     const base64Data = imageBase64.includes(',') 
