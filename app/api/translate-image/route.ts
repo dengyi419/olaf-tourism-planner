@@ -20,6 +20,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 清理和驗證 base64 數據
+    let cleanedBase64 = imageBase64;
+    
+    // 移除 data URL 前綴（如果存在）
+    if (cleanedBase64.includes(',')) {
+      cleanedBase64 = cleanedBase64.split(',')[1];
+    }
+    
+    // 移除所有空白字符（包括換行符、空格等）
+    cleanedBase64 = cleanedBase64.replace(/\s/g, '');
+    
+    // 驗證 base64 格式
+    const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+    if (!base64Pattern.test(cleanedBase64)) {
+      return NextResponse.json(
+        { error: '圖片數據格式不正確。請重新上傳圖片。' },
+        { status: 400 }
+      );
+    }
+    
+    // 確保 base64 字符串不為空
+    if (!cleanedBase64 || cleanedBase64.length === 0) {
+      return NextResponse.json(
+        { error: '圖片數據為空。請重新上傳圖片。' },
+        { status: 400 }
+      );
+    }
+
     if (!userApiKey) {
       return NextResponse.json(
         { error: '缺少 API Key。請在設定頁面設定您的 Gemini API Key。' },
