@@ -187,17 +187,31 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
     }
     
     if (flights.length > 0) {
-      // 從 flights 數組中找到匹配的航班（根據航班編號）
-      // 如果找不到，使用第一個結果
-      let flight = flights.find((f: any) => {
-        const fn = f.flight_number || f.flight_iata || '';
-        return fn.toUpperCase().includes(flightNumber.substring(0, 2)) || 
-               fn.toUpperCase().includes(flightNumber);
-      }) || flights[0];
-      
+      // SerpAPI 結構中，每個選項可能包含 flights 陣列，實際航班資訊在其中
+      // 這裡需要在所有 leg 裡尋找與目標航班編號完全匹配的項目（例如 "CI104" 對應 "CI 104"）
+      const normalizedTargetFlightNumber = flightNumber.replace(/\s+/g, '').toUpperCase();
+
+      const findMatchingOptionAndLeg = (options: any[]): { option: any; leg: any } | null => {
+        for (const opt of options) {
+          const legs = Array.isArray(opt.flights) && opt.flights.length > 0 ? opt.flights : [opt];
+          for (const leg of legs) {
+            const rawFn = (leg.flight_number || leg.flight_iata || '').toString();
+            const normalizedFn = rawFn.replace(/\s+/g, '').toUpperCase();
+            if (normalizedFn === normalizedTargetFlightNumber) {
+              return { option: opt, leg };
+            }
+          }
+        }
+        return null;
+      };
+
+      const match = findMatchingOptionAndLeg(flights);
+      const option = match?.option || flights[0];
+      const leg = match?.leg || (Array.isArray(option.flights) && option.flights.length > 0 ? option.flights[0] : option);
+
       // 提取機場資訊（根據 SerpAPI 文檔格式）
-      const departure = flight.departure_airport || flight.departure || {};
-      const arrival = flight.arrival_airport || flight.arrival || {};
+      const departure = leg.departure_airport || leg.departure || {};
+      const arrival = leg.arrival_airport || leg.arrival || {};
       
       // 提取時間資訊（根據 SerpAPI 文檔，時間格式為 "2025-10-14 11:30"）
       // 時間可能在 departure_airport.time 或 arrival_airport.time
@@ -215,13 +229,14 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
         return timeStr;
       };
       
-      const departureTimeRaw = departure.time || flight.departure_time || flight.dep_time || undefined;
-      const arrivalTimeRaw = arrival.time || flight.arrival_time || flight.arr_time || undefined;
+      const departureTimeRaw = departure.time || leg.departure_time || leg.dep_time || undefined;
+      const arrivalTimeRaw = arrival.time || leg.arrival_time || leg.arr_time || undefined;
       const departureTime = parseSerpAPITime(departureTimeRaw);
       const arrivalTime = parseSerpAPITime(arrivalTimeRaw);
       
       console.log('找到航班並提取數據:', JSON.stringify({
-        flightNumber: flight.flight_number || flight.flight_iata,
+        requestedFlightNumber: flightNumber,
+        matchedFlightNumber: (leg.flight_number || leg.flight_iata || '').toString(),
         departure: {
           id: departure.id,
           name: departure.name,
@@ -239,17 +254,18 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
         departureTime: departureTime,
         arrivalTime: arrivalTime,
         departureTimeSource: departure.time ? 'departure.time' : 
-          (flight.departure_time ? 'flight.departure_time' : 
-          (flight.dep_time ? 'flight.dep_time' : 'not found')),
+          (leg.departure_time ? 'flight.departure_time' : 
+          (leg.dep_time ? 'flight.dep_time' : 'not found')),
         arrivalTimeSource: arrival.time ? 'arrival.time' : 
-          (flight.arrival_time ? 'flight.arrival_time' : 
-          (flight.arr_time ? 'flight.arr_time' : 'not found')),
-        aircraft: flight.aircraft,
-        airplane: flight.airplane,
-        included_baggage: flight.included_baggage,
-        baggage_prices: flight.baggage_prices,
-        baggage: flight.baggage,
-        flightKeys: Object.keys(flight),
+          (leg.arrival_time ? 'flight.arrival_time' : 
+          (leg.arr_time ? 'flight.arr_time' : 'not found')),
+        aircraft: leg.aircraft,
+        airplane: leg.airplane,
+        included_baggage: leg.included_baggage,
+        baggage_prices: leg.baggage_prices,
+        baggage: leg.baggage,
+        optionKeys: Object.keys(option || {}),
+        legKeys: Object.keys(leg || {}),
       }, null, 2).substring(0, 3000));
       
       // 提取延誤資訊（SerpAPI 可能不直接提供延誤資訊，需要從其他字段推斷）
