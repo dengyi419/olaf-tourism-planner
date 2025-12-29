@@ -100,6 +100,7 @@ const translations: Record<Language, Record<string, string>> = {
     'flight.baggageAllowance': 'Baggage Allowance',
     'flight.carryOn': 'Carry-on',
     'flight.checkedBaggage': 'Checked Baggage',
+    'flight.aircraft': 'Aircraft',
     'flight.routeMap': 'Airport Route Map',
     'flight.apiSelect': 'API Selection',
     'flight.apiAirLabs': 'AirLabs',
