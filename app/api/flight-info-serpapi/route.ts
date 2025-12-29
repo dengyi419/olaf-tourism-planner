@@ -240,7 +240,7 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { flightNumber, flightDate, userApiKey } = body;
+    const { flightNumber, flightDate, userApiKey, airLabsApiKey } = body;
 
     if (!flightNumber) {
       return NextResponse.json(
@@ -257,10 +257,121 @@ export async function POST(request: NextRequest) {
     
     if (serpApiKey) {
       try {
-        const flightInfo = await querySerpAPIFlights(cleanedFlightNumber, serpApiKey, flightDate);
-        return NextResponse.json(flightInfo);
+        // 先從 AirLabs 獲取機場代碼（如果提供了 AirLabs API Key）
+        let depAirport: string | undefined;
+        let arrAirport: string | undefined;
+        let airLabsFlightInfo: any = null;
+        
+        if (airLabsApiKey) {
+          const airportInfo = await getAirportInfoFromAirLabs(cleanedFlightNumber, airLabsApiKey);
+          if (airportInfo) {
+            depAirport = airportInfo.departure;
+            arrAirport = airportInfo.arrival;
+          }
+          
+          // 同時獲取 AirLabs 的完整航班信息（用於延誤狀態和時間）
+          try {
+            const cleanedAirLabsKey = airLabsApiKey.trim().replace(/\s+/g, '');
+            const airLabsUrl = `https://airlabs.co/api/v9/flight?api_key=${cleanedAirLabsKey}&flight_iata=${cleanedFlightNumber}`;
+            const airLabsResponse = await fetch(airLabsUrl);
+            if (airLabsResponse.ok) {
+              const airLabsData = await airLabsResponse.json();
+              if (airLabsData.response && airLabsData.response.flight_iata) {
+                airLabsFlightInfo = airLabsData.response;
+              }
+            }
+          } catch (err) {
+            console.warn('無法獲取 AirLabs 完整信息:', err);
+          }
+        }
+        
+        if (!depAirport || !arrAirport) {
+          return NextResponse.json(
+            {
+              error: '無法獲取出發地和目的地機場代碼',
+              suggestion: '請確保已設定 AirLabs API Key，SerpAPI 需要機場代碼才能查詢。',
+            },
+            { status: 400 }
+          );
+        }
+        
+        const serpApiFlightInfo = await querySerpAPIFlights(cleanedFlightNumber, serpApiKey, flightDate, depAirport, arrAirport);
+        
+        // 合併 SerpAPI 和 AirLabs 的數據
+        // SerpAPI 提供路線和價格信息，AirLabs 提供實時狀態和延誤信息
+        if (airLabsFlightInfo) {
+          // 解析 AirLabs 的時間格式
+          const parseTime = (timeValue: any) => {
+            if (!timeValue) return undefined;
+            if (typeof timeValue === 'string' && timeValue.includes(' ')) {
+              const [datePart, timePart] = timeValue.split(' ');
+              const [year, month, day] = datePart.split('-');
+              const [hour, minute] = timePart.split(':');
+              return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute));
+            }
+            if (typeof timeValue === 'number') {
+              return new Date(timeValue * 1000);
+            }
+            return undefined;
+          };
+          
+          const depTime = parseTime(airLabsFlightInfo.dep_time || airLabsFlightInfo.dep_time_ts);
+          const arrTime = parseTime(airLabsFlightInfo.arr_time || airLabsFlightInfo.arr_time_ts);
+          const depActual = parseTime(airLabsFlightInfo.dep_actual || airLabsFlightInfo.dep_actual_ts);
+          const arrActual = parseTime(airLabsFlightInfo.arr_actual || airLabsFlightInfo.arr_actual_ts);
+          
+          // 計算延誤時間（分鐘）
+          const isDelayed = depActual && depTime ? depActual.getTime() > depTime.getTime() : false;
+          const delayMinutes = isDelayed && depActual && depTime 
+            ? Math.round((depActual.getTime() - depTime.getTime()) / (1000 * 60))
+            : 0;
+          
+          return NextResponse.json({
+            ...serpApiFlightInfo,
+            departure: {
+              ...serpApiFlightInfo.departure,
+              airport: airLabsFlightInfo.dep_iata || serpApiFlightInfo.departure.airport,
+              city: airLabsFlightInfo.dep_city || airLabsFlightInfo.dep_name || serpApiFlightInfo.departure.city,
+              terminal: airLabsFlightInfo.dep_terminal || serpApiFlightInfo.departure.terminal,
+              gate: airLabsFlightInfo.dep_gate || serpApiFlightInfo.departure.gate,
+            },
+            arrival: {
+              ...serpApiFlightInfo.arrival,
+              airport: airLabsFlightInfo.arr_iata || serpApiFlightInfo.arrival.airport,
+              city: airLabsFlightInfo.arr_city || airLabsFlightInfo.arr_name || serpApiFlightInfo.arrival.city,
+              terminal: airLabsFlightInfo.arr_terminal || serpApiFlightInfo.arrival.terminal,
+              gate: airLabsFlightInfo.arr_gate || serpApiFlightInfo.arrival.gate,
+              baggageClaim: airLabsFlightInfo.arr_baggage || serpApiFlightInfo.arrival.baggageClaim,
+            },
+            status: airLabsFlightInfo.status || (isDelayed ? `延誤 ${delayMinutes} 分鐘` : '準時'),
+            isDelayed: isDelayed || airLabsFlightInfo.status === 'delayed',
+            delayMinutes: delayMinutes,
+            scheduledTime: {
+              departure: depTime ? depTime.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : serpApiFlightInfo.scheduledTime?.departure,
+              arrival: arrTime ? arrTime.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : serpApiFlightInfo.scheduledTime?.arrival,
+            },
+            actualTime: {
+              departure: depActual ? depActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : serpApiFlightInfo.actualTime?.departure,
+              arrival: arrActual ? arrActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : serpApiFlightInfo.actualTime?.arrival,
+            },
+          });
+        }
+        
+        return NextResponse.json(serpApiFlightInfo);
       } catch (error: any) {
         console.error('SerpAPI Google Flights 查詢失敗:', error);
+        
+        // 如果是缺少機場代碼的錯誤，提供更詳細的建議
+        if (error.message.includes('departure_id') || error.message.includes('機場代碼')) {
+          return NextResponse.json(
+            {
+              error: error.message,
+              suggestion: 'SerpAPI 需要出發地和目的地機場代碼。請確保已設定 AirLabs API Key 以自動獲取機場代碼。',
+            },
+            { status: 400 }
+          );
+        }
+        
         return NextResponse.json(
           {
             error: error.message || `找不到航班 ${cleanedFlightNumber} 的信息`,
