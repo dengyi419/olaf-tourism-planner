@@ -47,6 +47,9 @@ interface FlightInfo {
     code?: string;
     name?: string;
   };
+  extensions?: string; // SerpAPI 提供的擴展資訊（行李、Wi-Fi等）
+  airline?: string; // 航空公司名稱
+  duration?: number; // 飛行時長（分鐘）
 }
 
 export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProps) {
@@ -265,11 +268,11 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
                     <span className="text-xs font-bold">{t('flight.arrival')}</span>
                   </div>
                   <div className="pl-6 space-y-1 text-xs">
-                    <div className="font-bold">{flightInfo.arrival.airport}</div>
+                    <div className="font-bold text-base">{flightInfo.arrival.airport}</div>
                     <div className="opacity-70">{flightInfo.arrival.city}</div>
                     {flightInfo.scheduledTime?.arrival && (
-                      <div className="opacity-70">
-                        {t('flight.scheduledTime')}：{flightInfo.scheduledTime.arrival}
+                      <div className="font-semibold text-sm">
+                        {flightInfo.scheduledTime.arrival}
                       </div>
                     )}
                     {flightInfo.actualTime?.arrival && (

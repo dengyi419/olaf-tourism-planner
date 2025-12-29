@@ -282,11 +282,17 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
         baggageInfo.baggageAllowance = flight.baggage_allowance;
       }
       
-      // 提取飛機型號資訊（根據 SerpAPI 文檔，使用 aircraft 欄位）
-      // aircraft 欄位可能是字符串（如 "Boeing 787"）或對象
+      // 提取飛機型號資訊（根據 SerpAPI 文檔）
+      // 優先使用 airplane 欄位（SerpAPI 標準欄位，如 "Boeing 737MAX 8 Passenger"）
+      // 其次使用 aircraft 欄位
       let aircraftInfo: any = undefined;
       
-      if (flight.aircraft) {
+      if (flight.airplane) {
+        // airplane 欄位通常是字符串，如 "Boeing 737MAX 8 Passenger"
+        aircraftInfo = {
+          name: flight.airplane,
+        };
+      } else if (flight.aircraft) {
         if (typeof flight.aircraft === 'string') {
           // 如果是字符串，直接使用
           aircraftInfo = {
@@ -311,6 +317,12 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
           };
         }
       }
+      
+      // 提取 extensions 資訊（行李、Wi-Fi等）
+      const extensions = flight.extensions || [];
+      const extensionsText = Array.isArray(extensions) 
+        ? extensions.map((ext: any) => typeof ext === 'string' ? ext : ext.text || ext.label || '').filter(Boolean).join(', ')
+        : '';
       
       return {
         flightNumber: `${airlineCode}${flightNum}` || flightNumber,

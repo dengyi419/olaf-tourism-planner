@@ -61,8 +61,9 @@ const translations: Record<Language, Record<string, string>> = {
     'flight.placeholder': '例如：CI100、BR101、JX123',
     'flight.serpapiNote': 'SerpAPI 提供延誤狀態和地圖路線顯示',
     'flight.delayed': '航班延誤 {minutes} 分鐘',
-    'flight.checkInNote': '提示：報到櫃檯資訊請以機場公告為準',
-    'flight.infoDisclaimer': '提示：航班資訊可能因實際情況而變動，請以機場公告為準。',
+        'flight.checkInNote': '提示：報到櫃檯資訊請以機場公告為準',
+        'flight.infoDisclaimer': '提示：航班資訊可能因實際情況而變動，請以機場公告為準。',
+        'flight.extensions': '航班資訊',
   },
   'en': {
     'mainMenu.title': 'OLAF TOURISM PLANNER',
