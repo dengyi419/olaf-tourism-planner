@@ -6,10 +6,10 @@ import { Settings, Save, Eye, EyeOff } from 'lucide-react';
 export default function ApiKeySettings() {
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
-  const [aviationStackApiKey, setAviationStackApiKey] = useState('');
+  const [airLabsApiKey, setAirLabsApiKey] = useState('');
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showMapsKey, setShowMapsKey] = useState(false);
-  const [showAviationStackKey, setShowAviationStackKey] = useState(false);
+  const [showAirLabsKey, setShowAirLabsKey] = useState(false);
   const [saved, setSaved] = useState(false);
 
   // 載入已保存的 API keys
@@ -17,10 +17,10 @@ export default function ApiKeySettings() {
     if (typeof window !== 'undefined') {
       const savedGeminiKey = localStorage.getItem('user_gemini_api_key') || '';
       const savedMapsKey = localStorage.getItem('user_google_maps_api_key') || '';
-      const savedAviationStackKey = localStorage.getItem('user_aviationstack_api_key') || '';
+      const savedAirLabsKey = localStorage.getItem('user_airlabs_api_key') || '';
       setGeminiApiKey(savedGeminiKey);
       setGoogleMapsApiKey(savedMapsKey);
-      setAviationStackApiKey(savedAviationStackKey);
+      setAirLabsApiKey(savedAirLabsKey);
     }
   }, []);
 
@@ -28,7 +28,7 @@ export default function ApiKeySettings() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('user_gemini_api_key', geminiApiKey);
       localStorage.setItem('user_google_maps_api_key', googleMapsApiKey);
-      localStorage.setItem('user_aviationstack_api_key', aviationStackApiKey);
+      localStorage.setItem('user_airlabs_api_key', airLabsApiKey);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       
@@ -185,7 +185,7 @@ export default function ApiKeySettings() {
           <p>• API 金鑰僅儲存在您的瀏覽器中，不會上傳到伺服器</p>
           <p>• 使用 AI 推薦功能前，必須先設定 Gemini API Key</p>
           <p>• 使用地圖和地點自動完成功能前，必須先設定 Google Maps API Key</p>
-          <p>• 使用航班查詢功能前，建議設定 AviationStack API Key 以獲取實時航班信息</p>
+          <p>• 使用航班查詢功能前，建議設定 AirLabs API Key 以獲取實時航班信息</p>
         </div>
       </div>
     </div>

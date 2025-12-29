@@ -55,9 +55,9 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
     setFlightInfo(null);
 
     try {
-      // 獲取用戶的 AviationStack API key（如果已設定）
+      // 獲取用戶的 AirLabs API key（如果已設定）
       const userApiKey = typeof window !== 'undefined' 
-        ? localStorage.getItem('user_aviationstack_api_key') || ''
+        ? localStorage.getItem('user_airlabs_api_key') || ''
         : '';
 
       const response = await fetch('/api/flight-info', {

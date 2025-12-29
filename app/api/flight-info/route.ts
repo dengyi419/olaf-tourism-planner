@@ -49,8 +49,8 @@ const FLIGHT_DATABASE: Record<string, any> = {
   },
 };
 
-// AviationStack API 查詢函數
-async function queryAviationStack(flightNumber: string, apiKey: string, flightDate?: string) {
+// AirLabs API 查詢函數
+async function queryAirLabs(flightNumber: string, apiKey: string, flightDate?: string) {
   try {
     // 清理 API Key（去除前後空格和換行符）
     const cleanedApiKey = apiKey.trim().replace(/\s+/g, '');
@@ -59,19 +59,28 @@ async function queryAviationStack(flightNumber: string, apiKey: string, flightDa
       throw new Error('API Key 為空');
     }
     
-    // AviationStack API 端點
-    // API 文檔：https://aviationstack.com/documentation
-    const baseUrl = 'https://api.aviationstack.com/v1/flights';
+    // AirLabs API 端點
+    // API 文檔：https://airlabs.co/docs/
+    const baseUrl = 'https://airlabs.co/api/v9/flight';
     const params = new URLSearchParams({
-      access_key: cleanedApiKey,
+      api_key: cleanedApiKey,
       flight_iata: flightNumber,
-      limit: '1',
     });
     
     // 如果提供了日期，添加到查詢參數中
     if (flightDate) {
-      params.append('flight_date', flightDate);
+      params.append('date', flightDate);
     }
+    
+    // 記錄請求參數（不記錄完整的 API Key，只記錄長度和前幾個字符）
+    console.log('AirLabs API 請求:', {
+      baseUrl,
+      flightNumber,
+      flightDate,
+      hasApiKey: !!cleanedApiKey,
+      apiKeyLength: cleanedApiKey.length,
+      apiKeyPrefix: cleanedApiKey.substring(0, 4) + '...',
+    });
     
     const response = await fetch(`${baseUrl}?${params.toString()}`, {
       method: 'GET',
@@ -89,7 +98,7 @@ async function queryAviationStack(flightNumber: string, apiKey: string, flightDa
       }
       
       // 記錄詳細錯誤信息以便調試
-      console.error('AviationStack API 錯誤:', {
+      console.error('AirLabs API 錯誤:', {
         status: response.status,
         statusText: response.statusText,
         errorData: errorData,
@@ -98,86 +107,83 @@ async function queryAviationStack(flightNumber: string, apiKey: string, flightDa
       // 檢查是否是認證相關錯誤
       if (response.status === 401) {
         // 401 通常是 API Key 無效
-        throw new Error('AviationStack API Key 無效。請確認 API Key 是否正確。');
+        throw new Error('AirLabs API Key 無效。請確認 API Key 是否正確。');
       }
       
       if (response.status === 403) {
         // 403 可能是配額用完、權限不足或 API Key 問題
-        if (errorData.error?.info?.includes('quota') || errorData.error?.info?.includes('limit')) {
-          throw new Error('AviationStack API 配額已用完或達到請求限制。請檢查您的訂閱計劃。');
+        if (errorData.error?.message?.includes('quota') || errorData.error?.message?.includes('limit')) {
+          throw new Error('AirLabs API 配額已用完或達到請求限制。請檢查您的訂閱計劃。');
         }
-        throw new Error('AviationStack API 權限不足。請確認 API Key 是否有效且訂閱計劃允許此操作。');
+        throw new Error('AirLabs API 權限不足。請確認 API Key 是否有效且訂閱計劃允許此操作。');
       }
       
       // 處理 API 返回的錯誤信息
-      if (errorData.error?.info) {
-        throw new Error(`AviationStack API 錯誤: ${errorData.error.info}`);
-      }
-      
       if (errorData.error?.message) {
-        throw new Error(`AviationStack API 錯誤: ${errorData.error.message}`);
+        throw new Error(`AirLabs API 錯誤: ${errorData.error.message}`);
       }
       
       // 通用錯誤
-      throw new Error(`AviationStack API 錯誤 (${response.status}): ${response.statusText}`);
+      throw new Error(`AirLabs API 錯誤 (${response.status}): ${response.statusText}`);
     }
 
     const data = await response.json();
     
     // 檢查 API 返回的錯誤（即使 HTTP 狀態碼是 200）
     if (data.error) {
-      console.error('AviationStack API 返回錯誤:', data.error);
+      console.error('AirLabs API 返回錯誤:', data.error);
       // 檢查錯誤代碼
-      if (data.error.code === 401) {
-        throw new Error('AviationStack API Key 無效。請確認 API Key 是否正確。');
+      if (data.error.code === 401 || data.error.code === 403) {
+        throw new Error('AirLabs API Key 無效或權限不足。請確認 API Key 是否正確。');
       }
-      if (data.error.code === 403) {
-        if (data.error.info?.includes('quota') || data.error.info?.includes('limit')) {
-          throw new Error('AviationStack API 配額已用完或達到請求限制。請檢查您的訂閱計劃。');
-        }
-        throw new Error('AviationStack API 權限不足。請確認 API Key 是否有效且訂閱計劃允許此操作。');
-      }
-      // 其他錯誤
-      throw new Error(data.error.info || data.error.message || 'AviationStack API 錯誤');
+      throw new Error(data.error.message || 'AirLabs API 錯誤');
     }
     
-    // 處理 AviationStack 返回的數據
-    if (data.data && data.data.length > 0) {
-      const flight = data.data[0]; // 使用第一個結果
+    // 處理 AirLabs 返回的數據
+    if (data.response && data.response.length > 0) {
+      const flight = data.response[0]; // 使用第一個結果
       
       // 轉換為我們的格式
       return {
-        flightNumber: flight.flight?.iata || flight.flight?.number || flightNumber,
+        flightNumber: flight.flight_iata || flight.flight_icao || flightNumber,
         departure: {
-          airport: flight.departure?.iata || flight.departure?.icao || '',
-          city: flight.departure?.airport || flight.departure?.city || '',
-          terminal: flight.departure?.terminal || undefined,
-          checkInCounter: undefined, // AviationStack 通常不提供此信息
-          gate: flight.departure?.gate || undefined,
+          airport: flight.dep_iata || flight.dep_icao || '',
+          city: flight.dep_name || '',
+          terminal: flight.dep_terminal || undefined,
+          checkInCounter: undefined, // AirLabs 通常不提供此信息
+          gate: flight.dep_gate || undefined,
         },
         arrival: {
-          airport: flight.arrival?.iata || flight.arrival?.icao || '',
-          city: flight.arrival?.airport || flight.arrival?.city || '',
-          terminal: flight.arrival?.terminal || undefined,
-          gate: flight.arrival?.gate || undefined,
-          baggageClaim: flight.arrival?.baggage || undefined,
+          airport: flight.arr_iata || flight.arr_icao || '',
+          city: flight.arr_name || '',
+          terminal: flight.arr_terminal || undefined,
+          gate: flight.arr_gate || undefined,
+          baggageClaim: flight.arr_baggage || undefined,
         },
-        status: flight.flight_status || '未知',
+        status: flight.status || '未知',
         scheduledTime: {
-          departure: flight.departure?.scheduled ? new Date(flight.departure.scheduled).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
-          arrival: flight.arrival?.scheduled ? new Date(flight.arrival.scheduled).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
+          departure: flight.dep_time ? new Date(flight.dep_time * 1000).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
+          arrival: flight.arr_time ? new Date(flight.arr_time * 1000).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
         },
         actualTime: {
-          departure: flight.departure?.actual ? new Date(flight.departure.actual).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
-          arrival: flight.arrival?.actual ? new Date(flight.arrival.actual).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
+          departure: flight.dep_actual ? new Date(flight.dep_actual * 1000).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
+          arrival: flight.arr_actual ? new Date(flight.arr_actual * 1000).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
         },
       };
     }
     
     throw new Error('未找到航班信息');
   } catch (error: any) {
-    console.error('AviationStack API 錯誤:', error);
-    throw error;
+    console.error('AirLabs API 錯誤:', {
+      message: error.message,
+      stack: error.stack,
+    });
+    // 如果是我們自己拋出的錯誤，直接拋出
+    if (error.message && (error.message.includes('AirLabs') || error.message.includes('API'))) {
+      throw error;
+    }
+    // 其他錯誤包裝一下
+    throw new Error(`查詢航班信息失敗: ${error.message || '未知錯誤'}`);
   }
 }
 
@@ -196,16 +202,16 @@ export async function POST(request: NextRequest) {
     // 清理航班編號（移除空格，轉為大寫）
     const cleanedFlightNumber = flightNumber.trim().toUpperCase();
 
-    // 優先使用 AviationStack API（如果提供了 API Key）
-    const aviationStackApiKey = userApiKey || process.env.AVIATIONSTACK_API_KEY;
+    // 優先使用 AirLabs API（如果提供了 API Key）
+    const airLabsApiKey = userApiKey || process.env.AIRLABS_API_KEY;
     
-    if (aviationStackApiKey) {
+    if (airLabsApiKey) {
       try {
-        const flightInfo = await queryAviationStack(cleanedFlightNumber, aviationStackApiKey, flightDate);
+        const flightInfo = await queryAirLabs(cleanedFlightNumber, airLabsApiKey, flightDate);
         return NextResponse.json(flightInfo);
       } catch (error: any) {
-        console.error('AviationStack 查詢失敗:', error);
-        // 如果 AviationStack 失敗，嘗試使用後備數據庫
+        console.error('AirLabs 查詢失敗:', error);
+        // 如果 AirLabs 失敗，嘗試使用後備數據庫
         if (FLIGHT_DATABASE[cleanedFlightNumber]) {
           console.log('使用後備數據庫');
           return NextResponse.json(FLIGHT_DATABASE[cleanedFlightNumber]);
@@ -221,7 +227,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 如果沒有 AviationStack API Key，使用後備數據庫
+    // 如果沒有 AirLabs API Key，使用後備數據庫
     if (FLIGHT_DATABASE[cleanedFlightNumber]) {
       return NextResponse.json(FLIGHT_DATABASE[cleanedFlightNumber]);
     }
@@ -230,7 +236,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: `找不到航班 ${cleanedFlightNumber} 的信息。`,
-        suggestion: '請在設定頁面設定 AviationStack API Key 以獲取實時航班信息，或確認航班編號是否正確。',
+        suggestion: '請在設定頁面設定 AirLabs API Key 以獲取實時航班信息，或確認航班編號是否正確。',
       },
       { status: 404 }
     );
