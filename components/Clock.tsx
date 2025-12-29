@@ -77,11 +77,16 @@ export default function Clock() {
     
     // 優先使用當前行程的開始日期
     let nearestStartDate: string | null = null;
+    let tripName: string | null = null;
     
     if (tripSettings?.startDate && itinerary.length > 0) {
       // 使用當前行程的開始日期（必須是今天之後）
       if (tripSettings.startDate > today) {
         nearestStartDate = tripSettings.startDate;
+        // 獲取當前行程名稱
+        if (currentTrip?.name) {
+          tripName = currentTrip.name;
+        }
       }
     }
     
@@ -92,6 +97,7 @@ export default function Clock() {
         .filter(trip => trip.settings?.startDate)
         .map(trip => ({
           id: trip.id,
+          name: trip.name,
           startDate: trip.settings!.startDate!,
         }))
         .filter(trip => trip.startDate > today) // 嚴格大於今天（不含今天）
@@ -99,6 +105,7 @@ export default function Clock() {
       
       if (futureTrips.length > 0) {
         nearestStartDate = futureTrips[0].startDate;
+        tripName = futureTrips[0].name;
       }
     }
     
@@ -120,7 +127,7 @@ export default function Clock() {
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     
-    return { days: diffDays, hours: diffHours };
+    return { days: diffDays, hours: diffHours, tripName: tripName || '行程' };
   };
 
   const countdown = getCountdown();
@@ -157,6 +164,11 @@ export default function Clock() {
               <Calendar className="w-3 h-3 text-blue-600" />
               <span className="text-[8px] text-blue-600 font-bold">距離行程開始</span>
             </div>
+            {countdown.tripName && (
+              <div className="text-[7px] text-gray-600 mb-1">
+                {countdown.tripName}
+              </div>
+            )}
             <div className="text-[10px] text-blue-600 font-bold">
               {countdown.days}天 {countdown.hours}小時
             </div>
