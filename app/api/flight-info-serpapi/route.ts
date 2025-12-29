@@ -183,6 +183,7 @@ async function querySerpAPIFlights(flightNumber: string, apiKey: string, flightD
         baggageAllowance: baggagePrices.join(', '),
         carryOn: baggagePrices.find((p: string) => p.toLowerCase().includes('carry-on') || p.toLowerCase().includes('carryon')) || undefined,
         checkedBaggage: baggagePrices.find((p: string) => !p.toLowerCase().includes('carry-on') && !p.toLowerCase().includes('carryon')) || undefined,
+        baggageClaim: undefined, // SerpAPI 不提供行李轉盤信息，由 AirLabs 提供
       } : undefined;
       
       return {
@@ -367,9 +368,11 @@ export async function POST(request: NextRequest) {
               arrival: arrActual ? arrActual.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : serpApiFlightInfo.actualTime?.arrival,
             },
             // 合併行李信息：優先使用 SerpAPI 的行李限額信息，AirLabs 的行李轉盤信息
-            baggageInfo: {
+            baggageInfo: serpApiFlightInfo.baggageInfo ? {
               ...serpApiFlightInfo.baggageInfo,
-              baggageClaim: airLabsFlightInfo.arr_baggage || serpApiFlightInfo.baggageInfo?.baggageClaim,
+              baggageClaim: airLabsFlightInfo.arr_baggage || serpApiFlightInfo.baggageInfo.baggageClaim,
+            } : {
+              baggageClaim: airLabsFlightInfo.arr_baggage || undefined,
             },
           });
         }
