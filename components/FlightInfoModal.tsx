@@ -98,14 +98,17 @@ export default function FlightInfoModal({ isOpen, onClose }: FlightInfoModalProp
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || '查詢航班信息失敗');
+        const currentLanguage = useLanguageStore.getState().language;
+        const defaultError = currentLanguage === 'zh-TW' ? '查詢航班信息失敗' : currentLanguage === 'en' ? 'Failed to query flight information' : currentLanguage === 'ja' ? 'フライト情報の照会に失敗しました' : '항공편 정보 조회 실패';
+        throw new Error(errorData.error || defaultError);
       }
 
       const data = await response.json();
       setFlightInfo(data);
     } catch (err: any) {
-      const errorMsg = err.message || (language === 'zh-TW' ? '查詢航班信息時發生錯誤' : language === 'en' ? 'An error occurred while querying flight information' : language === 'ja' ? 'フライト情報の照会中にエラーが発生しました' : '항공편 정보 조회 중 오류가 발생했습니다');
-      setError(errorMsg);
+      const currentLanguage = useLanguageStore.getState().language;
+      const defaultError = currentLanguage === 'zh-TW' ? '查詢航班信息時發生錯誤' : currentLanguage === 'en' ? 'An error occurred while querying flight information' : currentLanguage === 'ja' ? 'フライト情報の照会中にエラーが発生しました' : '항공편 정보 조회 중 오류가 발생했습니다';
+      setError(err.message || defaultError);
     } finally {
       setIsLoading(false);
     }
