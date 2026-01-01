@@ -20,8 +20,16 @@ export async function sendWelcomeEmail({ email, name }: SendWelcomeEmailParams) 
   const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
   
   try {
-    // 動態導入 Resend（避免在沒有配置時報錯）
-    const { Resend } = await import('resend');
+    // 動態導入 Resend（避免在沒有安裝時報錯）
+    let Resend;
+    try {
+      const resendModule = await import('resend');
+      Resend = resendModule.Resend;
+    } catch (importError) {
+      console.warn('[sendWelcomeEmail] Resend 模組未安裝，跳過發送郵件');
+      return { success: false, error: 'Resend module not installed' };
+    }
+    
     const resend = new Resend(resendApiKey);
 
     const userName = name || '用戶';
