@@ -6,7 +6,7 @@ import { useTravelStore } from '@/store/useTravelStore';
 import { useStorageStore } from '@/store/useStorageStore';
 import BudgetHeader from '@/components/BudgetHeader';
 import DaySection from '@/components/DaySection';
-import { Plus, Home, Save, FileDown, History } from 'lucide-react';
+import { Plus, Home, Save, FileDown, History, Share2 } from 'lucide-react';
 import { Activity, DayItinerary } from '@/types';
 
 export default function PlanPage() {
@@ -30,6 +30,8 @@ export default function PlanPage() {
   const [preferences, setPreferences] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [aiError, setAiError] = useState('');
+  const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   const hasSettings = !!tripSettings;
   const hasItinerary = itinerary.length > 0;
@@ -199,6 +201,46 @@ export default function PlanPage() {
       setDestination('');
       setBudget(50000);
       setCurrency('TWD');
+    }
+  };
+
+  const handleShareTrip = async () => {
+    if (!tripSettings || itinerary.length === 0) {
+      alert('沒有行程可以分享');
+      return;
+    }
+
+    setIsGeneratingShare(true);
+    try {
+      const currentTrip = useStorageStore.getState().currentTrip;
+      const tripNameValue = tripName.trim() || currentTrip?.name || tripSettings.destination || '我的行程';
+      
+      const response = await fetch('/api/share-trip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tripId: currentTrip?.id,
+          name: tripNameValue,
+          settings: tripSettings,
+          itinerary,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('生成分享連結失敗');
+      }
+
+      const data = await response.json();
+      setShareUrl(data.shareUrl);
+      
+      // 複製到剪貼板
+      await navigator.clipboard.writeText(data.shareUrl);
+      alert('分享連結已複製到剪貼板！');
+    } catch (error) {
+      console.error('Error sharing trip:', error);
+      alert('生成分享連結失敗，請重試');
+    } finally {
+      setIsGeneratingShare(false);
     }
   };
 
@@ -566,6 +608,15 @@ export default function PlanPage() {
                         >
                           <FileDown className="w-3 h-3 inline mr-1" />
                           匯出 PDF
+                        </button>
+                        <button
+                          onClick={handleShareTrip}
+                          disabled={isGeneratingShare}
+                          className="pixel-button px-3 py-1.5 text-xs disabled:opacity-50"
+                          title="生成分享連結"
+                        >
+                          <Share2 className="w-3 h-3 inline mr-1" />
+                          {isGeneratingShare ? '生成中...' : '分享連結'}
                         </button>
                         <button
                           onClick={handleClearCurrentTrip}

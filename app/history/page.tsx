@@ -6,7 +6,7 @@ import { useTravelStore } from '@/store/useTravelStore';
 import { useStorageStore } from '@/store/useStorageStore';
 import DaySection from '@/components/DaySection';
 import BudgetHeader from '@/components/BudgetHeader';
-import { Home, Trash2, Save } from 'lucide-react';
+import { Home, Trash2, Save, Share2 } from 'lucide-react';
 
 export default function HistoryPage() {
   const router = useRouter();
@@ -14,6 +14,7 @@ export default function HistoryPage() {
   const { tripSettings, itinerary, setItinerary, setTripSettings } = useTravelStore();
   const [selectedTrip, setSelectedTrip] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingShare, setIsGeneratingShare] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleLoadTrip = (tripId: string) => {
@@ -102,6 +103,42 @@ export default function HistoryPage() {
       // 刪除後重新同步（deleteTrip 內部已經會同步，這裡確保 UI 更新）
       const { syncFromServer } = useStorageStore.getState();
       await syncFromServer();
+    }
+  };
+
+  const handleShareTrip = async () => {
+    if (!currentTrip || !tripSettings || itinerary.length === 0) {
+      alert('沒有行程可以分享');
+      return;
+    }
+
+    setIsGeneratingShare(true);
+    try {
+      const response = await fetch('/api/share-trip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tripId: currentTrip.id,
+          name: currentTrip.name,
+          settings: tripSettings,
+          itinerary,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('生成分享連結失敗');
+      }
+
+      const data = await response.json();
+      
+      // 複製到剪貼板
+      await navigator.clipboard.writeText(data.shareUrl);
+      alert('分享連結已複製到剪貼板！');
+    } catch (error) {
+      console.error('Error sharing trip:', error);
+      alert('生成分享連結失敗，請重試');
+    } finally {
+      setIsGeneratingShare(false);
     }
   };
 
@@ -196,14 +233,25 @@ export default function HistoryPage() {
                         {currentTrip.itinerary.length} 天
                       </p>
                     </div>
-                    <button
-                      onClick={() => handleDeleteTrip(currentTrip.id)}
-                      className="pixel-button px-4 py-2 text-sm bg-red-500 hover:bg-red-600 ml-4"
-                      title="刪除此行程"
-                    >
-                      <Trash2 className="w-4 h-4 inline mr-2" />
-                      刪除行程
-                    </button>
+                    <div className="flex gap-2 ml-4">
+                      <button
+                        onClick={handleShareTrip}
+                        disabled={isGeneratingShare}
+                        className="pixel-button px-4 py-2 text-sm disabled:opacity-50"
+                        title="生成分享連結"
+                      >
+                        <Share2 className="w-4 h-4 inline mr-2" />
+                        {isGeneratingShare ? '生成中...' : '分享連結'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTrip(currentTrip.id)}
+                        className="pixel-button px-4 py-2 text-sm bg-red-500 hover:bg-red-600"
+                        title="刪除此行程"
+                      >
+                        <Trash2 className="w-4 h-4 inline mr-2" />
+                        刪除行程
+                      </button>
+                    </div>
                   </div>
                 </div>
 
