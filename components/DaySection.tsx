@@ -158,14 +158,17 @@ export default function DaySection({ day, readOnly = false }: DaySectionProps) {
               <div className="flex items-center gap-2 my-2 px-4">
                 <div className="flex-1 border-t-2 border-black"></div>
                 {readOnly ? (
-                  day.activities[index + 1]?.transportCostFromPrevious > 0 && (
-                    <div className="flex items-center gap-2 bg-white border-2 border-black px-3 py-1">
-                      <label className="text-xs whitespace-nowrap">交通費用:</label>
-                      <span className="text-xs">
-                        {tripSettings?.currency || 'TWD'} {day.activities[index + 1]?.transportCostFromPrevious.toLocaleString()}
-                      </span>
-                    </div>
-                  )
+                  (() => {
+                    const nextActivity = day.activities[index + 1];
+                    return nextActivity && (nextActivity.transportCostFromPrevious || 0) > 0 ? (
+                      <div className="flex items-center gap-2 bg-white border-2 border-black px-3 py-1">
+                        <label className="text-xs whitespace-nowrap">交通費用:</label>
+                        <span className="text-xs">
+                          {tripSettings?.currency || 'TWD'} {(nextActivity.transportCostFromPrevious || 0).toLocaleString()}
+                        </span>
+                      </div>
+                    ) : null;
+                  })()
                 ) : (
                   <div className="flex items-center gap-2 bg-white border-2 border-black px-3 py-1">
                     <label className="text-xs whitespace-nowrap">交通費用:</label>
