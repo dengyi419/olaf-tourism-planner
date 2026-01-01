@@ -31,17 +31,23 @@ const getNextAuthUrl = () => {
 // 保存或更新用戶到資料庫
 async function saveUserToDatabase(email: string, name?: string | null, picture?: string | null) {
   if (!email) {
-    console.warn('無法保存用戶：email 為空');
+    console.warn('[saveUserToDatabase] 無法保存用戶：email 為空');
     return;
   }
+
+  console.log('[saveUserToDatabase] 開始保存用戶:', { email, name, picture });
 
   try {
     const supabase = await initializeSupabase();
     
     if (!supabase) {
-      console.warn('Supabase 未配置，跳過保存用戶');
+      console.warn('[saveUserToDatabase] Supabase 未配置，跳過保存用戶');
+      console.warn('[saveUserToDatabase] SUPABASE_URL:', process.env.SUPABASE_URL ? '已設置' : '未設置');
+      console.warn('[saveUserToDatabase] SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '已設置' : '未設置');
       return;
     }
+
+    console.log('[saveUserToDatabase] Supabase 客戶端初始化成功');
 
     const now = new Date().toISOString();
     
@@ -62,12 +68,17 @@ async function saveUserToDatabase(email: string, name?: string | null, picture?:
       .single();
 
     if (error) {
-      console.error('保存用戶到資料庫失敗:', error);
+      console.error('[saveUserToDatabase] 保存用戶到資料庫失敗:', error);
+      console.error('[saveUserToDatabase] 錯誤詳情:', JSON.stringify(error, null, 2));
     } else {
-      console.log('用戶已保存到資料庫:', email);
+      console.log('[saveUserToDatabase] 用戶已成功保存到資料庫:', email);
+      console.log('[saveUserToDatabase] 返回的資料:', data);
     }
   } catch (error: any) {
-    console.error('保存用戶時發生錯誤:', error?.message || error);
+    console.error('[saveUserToDatabase] 保存用戶時發生錯誤:', error?.message || error);
+    if (error?.stack) {
+      console.error('[saveUserToDatabase] 錯誤堆棧:', error.stack);
+    }
   }
 }
 
@@ -86,8 +97,16 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
+      console.log('[jwt callback] 觸發:', { 
+        hasAccount: !!account, 
+        hasUser: !!user, 
+        trigger,
+        email: user?.email || token.email 
+      });
+
       if (account && user) {
+        console.log('[jwt callback] 首次登入，保存用戶資訊');
         token.accessToken = account.access_token;
         token.id = user.id;
         token.email = user.email;
@@ -96,9 +115,18 @@ export const authOptions: NextAuthOptions = {
         
         // 保存用戶到資料庫（僅在首次登入或更新時）
         if (user.email) {
+          console.log('[jwt callback] 調用 saveUserToDatabase');
           await saveUserToDatabase(user.email, user.name || null, user.image || null);
+        } else {
+          console.warn('[jwt callback] user.email 為空，無法保存');
         }
+      } else if (token.email && !token.userSaved) {
+        // 如果 token 中有 email 但還沒有保存過，也嘗試保存（處理某些邊緣情況）
+        console.log('[jwt callback] Token 中有 email，但用戶可能未保存，嘗試保存');
+        await saveUserToDatabase(token.email as string, token.name as string || null, token.picture as string || null);
+        token.userSaved = true; // 標記已保存，避免重複保存
       }
+      
       return token;
     },
     async session({ session, token }) {
