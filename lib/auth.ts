@@ -1,5 +1,6 @@
 import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
+import { initializeSupabase } from './supabase';
 
 // 驗證必要的環境變數
 if (!process.env.GOOGLE_CLIENT_ID) {
@@ -27,6 +28,49 @@ const getNextAuthUrl = () => {
   return 'http://localhost:3000';
 };
 
+// 保存或更新用戶到資料庫
+async function saveUserToDatabase(email: string, name?: string | null, picture?: string | null) {
+  if (!email) {
+    console.warn('無法保存用戶：email 為空');
+    return;
+  }
+
+  try {
+    const supabase = await initializeSupabase();
+    
+    if (!supabase) {
+      console.warn('Supabase 未配置，跳過保存用戶');
+      return;
+    }
+
+    const now = new Date().toISOString();
+    
+    // 使用 upsert 來創建或更新用戶
+    const { data, error } = await supabase
+      .from('users')
+      .upsert({
+        email,
+        name: name || null,
+        picture: picture || null,
+        provider: 'google',
+        last_login_at: now,
+        updated_at: now,
+      }, {
+        onConflict: 'email',
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('保存用戶到資料庫失敗:', error);
+    } else {
+      console.log('用戶已保存到資料庫:', email);
+    }
+  } catch (error: any) {
+    console.error('保存用戶時發生錯誤:', error?.message || error);
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -49,6 +93,11 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.name = user.name;
         token.picture = user.image;
+        
+        // 保存用戶到資料庫（僅在首次登入或更新時）
+        if (user.email) {
+          await saveUserToDatabase(user.email, user.name || null, user.image || null);
+        }
       }
       return token;
     },
