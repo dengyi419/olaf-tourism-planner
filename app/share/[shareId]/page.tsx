@@ -107,7 +107,7 @@ export default function SharePage() {
 
           {/* 行程內容 */}
           {trip.itinerary.map((day) => (
-            <DaySection key={day.dayId} day={day} />
+            <DaySection key={day.dayId} day={day} readOnly={true} />
           ))}
         </div>
       </main>

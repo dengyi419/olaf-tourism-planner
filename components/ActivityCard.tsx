@@ -9,6 +9,7 @@ import LocationAutocomplete from './LocationAutocomplete';
 interface ActivityCardProps {
   activity: Activity;
   dayId: number;
+  readOnly?: boolean;
 }
 
 const categoryLabels = {
@@ -25,7 +26,7 @@ const categoryColors = {
   shopping: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
 };
 
-export default function ActivityCard({ activity, dayId }: ActivityCardProps) {
+export default function ActivityCard({ activity, dayId, readOnly = false }: ActivityCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValues, setEditValues] = useState({
     time: activity.time,
@@ -168,22 +169,26 @@ export default function ActivityCard({ activity, dayId }: ActivityCardProps) {
                     <MapPin className="w-4 h-4 mr-2" />
                     <span>導航</span>
                   </button>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="pixel-button px-4 py-2 text-sm bg-gray-500"
-                    title="編輯"
-                  >
-                    <Edit2 className="w-4 h-4 mr-2" />
-                    <span>編輯</span>
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    className="pixel-button px-4 py-2 text-sm bg-red-500"
-                    title="刪除"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    <span>刪除</span>
-                  </button>
+                  {!readOnly && (
+                    <>
+                      <button
+                        onClick={() => setIsEditing(true)}
+                        className="pixel-button px-4 py-2 text-sm bg-gray-500"
+                        title="編輯"
+                      >
+                        <Edit2 className="w-4 h-4 mr-2" />
+                        <span>編輯</span>
+                      </button>
+                      <button
+                        onClick={handleDelete}
+                        className="pixel-button px-4 py-2 text-sm bg-red-500"
+                        title="刪除"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        <span>刪除</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </>

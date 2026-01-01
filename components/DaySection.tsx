@@ -10,9 +10,10 @@ import { useState, useEffect } from 'react';
 
 interface DaySectionProps {
   day: DayItinerary;
+  readOnly?: boolean;
 }
 
-export default function DaySection({ day }: DaySectionProps) {
+export default function DaySection({ day, readOnly = false }: DaySectionProps) {
   const { addActivity, deleteDay, getTodaySpent, tripSettings, updateActivity } = useTravelStore();
   const [showAddForm, setShowAddForm] = useState(false);
   
@@ -125,14 +126,16 @@ export default function DaySection({ day }: DaySectionProps) {
               今日花費: {tripSettings?.currency || 'TWD'} {todaySpent.toLocaleString()}
             </span>
           </div>
-          <button
-            onClick={handleDeleteDay}
-            className="pixel-button px-4 py-2 text-sm bg-red-500"
-            title="刪除這天"
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            <span>刪除</span>
-          </button>
+          {!readOnly && (
+            <button
+              onClick={handleDeleteDay}
+              className="pixel-button px-4 py-2 text-sm bg-red-500"
+              title="刪除這天"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              <span>刪除</span>
+            </button>
+          )}
         </div>
 
         {/* 顯示路線地圖 - 每天都有 */}
@@ -148,39 +151,50 @@ export default function DaySection({ day }: DaySectionProps) {
         {day.activities.map((activity, index) => (
           <div key={activity.id}>
             {/* 活動卡片 */}
-            <ActivityCard activity={activity} dayId={day.dayId} />
+            <ActivityCard activity={activity} dayId={day.dayId} readOnly={readOnly} />
             
             {/* 活動之間的連接線和交通費用輸入（不是最後一個活動時顯示） */}
             {index < day.activities.length - 1 && (
               <div className="flex items-center gap-2 my-2 px-4">
                 <div className="flex-1 border-t-2 border-black"></div>
-                <div className="flex items-center gap-2 bg-white border-2 border-black px-3 py-1">
-                  <label className="text-xs whitespace-nowrap">交通費用:</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={day.activities[index + 1].transportCostFromPrevious || 0}
-                    onChange={(e) => {
-                      const transportCost = parseFloat(e.target.value) || 0;
-                      const nextActivity = day.activities[index + 1];
-                      const { updateActivity } = useTravelStore.getState();
-                      updateActivity(day.dayId, nextActivity.id, {
-                        transportCostFromPrevious: transportCost,
-                      });
-                    }}
-                    className="pixel-input w-24 px-2 py-1 text-xs text-center"
-                    placeholder="0"
-                  />
-                  <span className="text-xs">{tripSettings?.currency || 'TWD'}</span>
-                </div>
+                {readOnly ? (
+                  day.activities[index + 1].transportCostFromPrevious > 0 && (
+                    <div className="flex items-center gap-2 bg-white border-2 border-black px-3 py-1">
+                      <label className="text-xs whitespace-nowrap">交通費用:</label>
+                      <span className="text-xs">
+                        {tripSettings?.currency || 'TWD'} {day.activities[index + 1].transportCostFromPrevious.toLocaleString()}
+                      </span>
+                    </div>
+                  )
+                ) : (
+                  <div className="flex items-center gap-2 bg-white border-2 border-black px-3 py-1">
+                    <label className="text-xs whitespace-nowrap">交通費用:</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={day.activities[index + 1].transportCostFromPrevious || 0}
+                      onChange={(e) => {
+                        const transportCost = parseFloat(e.target.value) || 0;
+                        const nextActivity = day.activities[index + 1];
+                        const { updateActivity } = useTravelStore.getState();
+                        updateActivity(day.dayId, nextActivity.id, {
+                          transportCostFromPrevious: transportCost,
+                        });
+                      }}
+                      className="pixel-input w-24 px-2 py-1 text-xs text-center"
+                      placeholder="0"
+                    />
+                    <span className="text-xs">{tripSettings?.currency || 'TWD'}</span>
+                  </div>
+                )}
                 <div className="flex-1 border-t-2 border-black"></div>
               </div>
             )}
           </div>
         ))}
 
-        {showAddForm ? (
+        {!readOnly && showAddForm ? (
           <div className="pixel-card p-4">
             <div className="space-y-3">
               <div className="flex gap-2">
@@ -255,14 +269,16 @@ export default function DaySection({ day }: DaySectionProps) {
             </div>
           </div>
         ) : (
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="pixel-button w-full py-3 text-sm"
-            title="新增行程"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            <span>新增行程</span>
-          </button>
+          !readOnly && (
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="pixel-button w-full py-3 text-sm"
+              title="新增行程"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              <span>新增行程</span>
+            </button>
+          )
         )}
       </div>
     </div>
