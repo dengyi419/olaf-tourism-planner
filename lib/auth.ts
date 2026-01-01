@@ -1,6 +1,7 @@
 import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import { initializeSupabase } from './supabase';
+import { sendWelcomeEmail } from './email';
 
 // 驗證必要的環境變數
 if (!process.env.GOOGLE_CLIENT_ID) {
@@ -117,6 +118,23 @@ export const authOptions: NextAuthOptions = {
         if (user.email) {
           console.log('[jwt callback] 調用 saveUserToDatabase');
           await saveUserToDatabase(user.email, user.name || null, user.image || null);
+          
+          // 發送歡迎郵件（僅在首次登入時）
+          console.log('[jwt callback] 發送歡迎郵件');
+          try {
+            const emailResult = await sendWelcomeEmail({
+              email: user.email,
+              name: user.name || null,
+            });
+            if (emailResult.success) {
+              console.log('[jwt callback] 歡迎郵件發送成功');
+            } else {
+              console.warn('[jwt callback] 歡迎郵件發送失敗:', emailResult.error);
+            }
+          } catch (error) {
+            console.error('[jwt callback] 發送歡迎郵件時發生錯誤:', error);
+            // 不中斷登入流程，即使郵件發送失敗也繼續
+          }
         } else {
           console.warn('[jwt callback] user.email 為空，無法保存');
         }
