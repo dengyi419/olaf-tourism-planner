@@ -66,6 +66,10 @@ export async function POST(request: NextRequest) {
     const shareId = `share-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const now = new Date().toISOString();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 天後過期
+    
+    // 從請求中獲取 origin（動態獲取當前域名）
+    const url = new URL(request.url);
+    const baseUrl = `${url.protocol}//${url.host}`;
 
     const sharedTrip = {
       shareId,
@@ -106,7 +110,7 @@ export async function POST(request: NextRequest) {
         } else {
           return NextResponse.json({ 
             shareId, 
-            shareUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/share/${shareId}`,
+            shareUrl: `${baseUrl}/share/${shareId}`,
             expiresAt 
           });
         }
@@ -121,7 +125,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       shareId, 
-      shareUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/share/${shareId}`,
+      shareUrl: `${baseUrl}/share/${shareId}`,
       expiresAt 
     });
   } catch (error: any) {
