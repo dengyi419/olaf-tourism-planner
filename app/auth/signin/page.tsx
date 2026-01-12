@@ -14,9 +14,11 @@ function isCapacitorIOS(): boolean {
   const isIOS = /iPad|iPhone|iPod/.test(ua);
   
   // 检查是否在 Capacitor 环境中（通过检查 Capacitor 对象或特定的 window 属性）
+  // standalone 是 iOS Safari 的非标准属性，用于检测 PWA 模式
+  const navigator = window.navigator as Navigator & { standalone?: boolean };
   const isCapacitor = !!(window as any).Capacitor || 
                       !!(window as any).webkit?.messageHandlers ||
-                      (isIOS && !window.navigator.standalone && document.referrer === '');
+                      (isIOS && !navigator.standalone && document.referrer === '');
   
   return isIOS && isCapacitor;
 }
