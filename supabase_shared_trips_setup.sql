@@ -29,16 +29,29 @@ CREATE POLICY "Anyone can view shared trips"
   USING (true);
 
 -- 創建策略：已認證用戶可以創建分享連結
+-- 注意：由於我們在 API 層面驗證用戶身份（使用 service_role key），
+-- 這裡的策略主要是為了滿足 RLS 要求
+-- 實際的安全控制由 API 層面的 session 驗證提供
 CREATE POLICY "Authenticated users can create shared trips"
   ON shared_trips FOR INSERT
-  WITH CHECK (true); -- 在 API 層面驗證用戶身份
+  WITH CHECK (
+    -- 檢查是否有有效的認證（通過 JWT）
+    -- 由於我們使用 service_role key，這個策略主要用於文檔目的
+    -- 實際驗證在 API 層面完成
+    auth.role() = 'authenticated' OR auth.role() = 'service_role'
+  );
 
 -- 可選：創建一個函數來自動清理過期的分享連結
+-- 設置 search_path 以防止 SQL 注入攻擊
 CREATE OR REPLACE FUNCTION cleanup_expired_shared_trips()
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
   DELETE FROM shared_trips
   WHERE expires_at < NOW();
 END;
-$$ LANGUAGE plpgsql;
+$$;
 

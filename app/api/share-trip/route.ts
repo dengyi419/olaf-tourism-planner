@@ -45,9 +45,25 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
+    // 詳細的 session 檢查和日誌
+    console.log('[share-trip POST] Session check:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      hasEmail: !!session?.user?.email,
+      email: session?.user?.email,
+      userAgent: request.headers.get('user-agent'),
+      origin: request.headers.get('origin'),
+      referer: request.headers.get('referer'),
+    });
+    
     if (!session?.user?.email) {
+      console.warn('[share-trip POST] Unauthorized - no session or email');
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { 
+          error: 'Unauthorized',
+          message: '請先登入以使用分享功能',
+          details: session ? 'Session exists but no email' : 'No session found'
+        },
         { status: 401 }
       );
     }
@@ -55,9 +71,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { tripId, name, settings, itinerary } = body;
 
+    console.log('[share-trip POST] Request body:', {
+      hasTripId: !!tripId,
+      hasName: !!name,
+      hasSettings: !!settings,
+      hasItinerary: !!itinerary,
+      itineraryLength: itinerary?.length,
+    });
+
     if (!settings || !itinerary) {
+      console.warn('[share-trip POST] Missing required fields:', {
+        hasSettings: !!settings,
+        hasItinerary: !!itinerary,
+      });
       return NextResponse.json(
-        { error: 'Missing required fields: settings, itinerary' },
+        { 
+          error: 'Missing required fields',
+          message: '缺少必要的行程資料',
+          details: `settings: ${!!settings}, itinerary: ${!!itinerary}`
+        },
         { status: 400 }
       );
     }
@@ -129,9 +161,17 @@ export async function POST(request: NextRequest) {
       expiresAt 
     });
   } catch (error: any) {
-    console.error('Error creating share link:', error);
+    console.error('[share-trip POST] Error creating share link:', {
+      error: error?.message || error,
+      stack: error?.stack,
+      name: error?.name,
+    });
     return NextResponse.json(
-      { error: 'Failed to create share link', details: error.message },
+      { 
+        error: 'Failed to create share link',
+        message: '建立分享連結時發生錯誤',
+        details: error?.message || 'Unknown error'
+      },
       { status: 500 }
     );
   }

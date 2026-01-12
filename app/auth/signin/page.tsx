@@ -2,19 +2,46 @@
 
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { LogIn } from 'lucide-react';
+
+// 检测是否在 Capacitor iOS 环境中
+function isCapacitorIOS(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  // 检查 user agent
+  const ua = window.navigator.userAgent || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  
+  // 检查是否在 Capacitor 环境中（通过检查 Capacitor 对象或特定的 window 属性）
+  const isCapacitor = !!(window as any).Capacitor || 
+                      !!(window as any).webkit?.messageHandlers ||
+                      (isIOS && !window.navigator.standalone && document.referrer === '');
+  
+  return isIOS && isCapacitor;
+}
 
 function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
+  const [isIOSApp, setIsIOSApp] = useState(false);
+  
+  useEffect(() => {
+    setIsIOSApp(isCapacitorIOS());
+  }, []);
+  
   const callbackUrl = searchParams.get('callbackUrl') || '/';
+  
+  // 如果在 iOS app 中，使用特殊的 callback URL
+  const finalCallbackUrl = isIOSApp 
+    ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.ihaveatree.shop'}/auth/callback?redirect=${encodeURIComponent(callbackUrl)}`
+    : callbackUrl;
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      await signIn('google', { callbackUrl });
+      await signIn('google', { callbackUrl: finalCallbackUrl });
     } catch (error) {
       console.error('Sign in error:', error);
     } finally {

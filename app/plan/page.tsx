@@ -215,9 +215,17 @@ export default function PlanPage() {
       const currentTrip = useStorageStore.getState().currentTrip;
       const tripNameValue = tripName.trim() || currentTrip?.name || tripSettings.destination || '我的行程';
       
+      console.log('[handleShareTrip] 準備發送請求:', {
+        hasTripSettings: !!tripSettings,
+        itineraryLength: itinerary.length,
+        tripId: currentTrip?.id,
+        name: tripNameValue,
+      });
+
       const response = await fetch('/api/share-trip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // 確保包含 cookies（session）
         body: JSON.stringify({
           tripId: currentTrip?.id,
           name: tripNameValue,
@@ -226,19 +234,35 @@ export default function PlanPage() {
         }),
       });
 
+      console.log('[handleShareTrip] API 回應:', {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+      });
+
       if (!response.ok) {
-        throw new Error('生成分享連結失敗');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('[handleShareTrip] API 錯誤:', errorData);
+        throw new Error(errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('[handleShareTrip] 成功:', data);
       setShareUrl(data.shareUrl);
       
-      // 複製到剪貼板
-      await navigator.clipboard.writeText(data.shareUrl);
-      alert('分享連結已複製到剪貼板！');
-    } catch (error) {
-      console.error('Error sharing trip:', error);
-      alert('生成分享連結失敗，請重試');
+      // 複製到剪貼板（手機端可能失敗，需要 fallback）
+      try {
+        await navigator.clipboard.writeText(data.shareUrl);
+        alert(`分享連結已複製到剪貼板！\n\n${data.shareUrl}`);
+      } catch (clipboardError) {
+        // 如果複製失敗（例如在 HTTP 環境或某些手機瀏覽器），顯示連結讓用戶手動複製
+        console.warn('[handleShareTrip] 複製到剪貼板失敗:', clipboardError);
+        alert(`分享連結已生成！\n\n${data.shareUrl}\n\n請手動複製此連結`);
+      }
+    } catch (error: any) {
+      console.error('[handleShareTrip] 錯誤:', error);
+      const errorMessage = error?.message || '未知錯誤';
+      alert(`生成分享連結失敗：${errorMessage}\n\n請確認：\n1. 已登入帳號\n2. 網路連線正常\n3. 行程資料完整`);
     } finally {
       setIsGeneratingShare(false);
     }
